@@ -1,0 +1,38 @@
+{
+    "poe1": [
+        { "value": "Currency", "category": "Currency" },
+        { "value": "Fragments", "category": "Fragments" },
+        { "value": "Runegraft", "category": "Runegrafts" },
+        { "value": "AllflameEmber", "category": "Allflame Embers" },
+        { "value": "Tattoo", "category": "Tattoos" },
+        { "value": "Omen", "category": "Omens" },
+        { "value": "DjinnCoin", "category": "Djinn Coins" },
+        { "value": "Ducat", "category": "Ducats" },
+        { "value": "EnshroudingCrystal", "category": "Enshrouding Crystals" },
+        { "value": "DivinationCard", "category": "Divination Cards" },
+        { "value": "Artifact", "category": "Artifacts" },
+        { "value": "Oil", "category": "Oils" },
+        { "value": "DeliriumOrb", "category": "Delirium Orbs" },
+        { "value": "Scarab", "category": "Scarabs" },
+        { "value": "Astrolabe", "category": "Astrolabes" },
+        { "value": "Fossil", "category": "Fossils" },
+        { "value": "Resonator", "category": "Resonators" },
+        { "value": "Essence", "category": "Essences" }
+    ],
+    "poe2": [
+        { "value": "Currency", "category": "Currency" },
+        { "value": "Fragments", "category": "Fragments" },
+        { "value": "Abyss", "category": "Abyssal Bones" },
+        { "value": "UncutGems", "category": "Uncut Gems" },
+        { "value": "LineageSupportGems", "category": "Lineage Gems" },
+        { "value": "Essences", "category": "Essences" },
+        { "value": "SoulCores", "category": "Soul Cores" },
+        { "value": "Idols", "category": "Idols" },
+        { "value": "Runes", "category": "Runes" },
+        { "value": "Ritual", "category": "Omens" },
+        { "value": "Expedition", "category": "Expedition" },
+        { "value": "Delirium", "category": "Liquid Emotions" },
+        { "value": "Breach", "category": "Catalysts" },
+        { "value": "Verisium", "category": "Verisium" }
+    ]
+}
