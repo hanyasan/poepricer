@@ -4,13 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Poe\Exchange\ExchangeType;
 use App\Models\Poe\PoeVersion;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\FeatureTestCase;
 
 class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
 {
-    use DatabaseTransactions;
-
     /**
      * @var list<string>
      */

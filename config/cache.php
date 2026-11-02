@@ -1,5 +1,7 @@
 <?php
 
+use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
+use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use Illuminate\Support\Str;
 
 return [
@@ -131,6 +133,9 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        ExchangeTypeDto::class,
+        PoeVersionDto::class,
+    ],
 
 ];

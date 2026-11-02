@@ -5,14 +5,14 @@ namespace App\Utility\Mapper;
 use App\Exceptions\Mapping\MapInvalidSourceException;
 use App\Exceptions\Mapping\MappingErrorException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 interface MapperServiceContract
 {
     /**
      * @template T of object
-     * @param class-string<T> $dtoClass
-     * @param string $data
      *
+     * @param  class-string<T>  $dtoClass
      * @return T
      *
      * @throws MapInvalidSourceException
@@ -23,9 +23,7 @@ interface MapperServiceContract
     /**
      * @template T of object
      *
-     * @param class-string<T> $dtoClass
-     * @param string $data
-     *
+     * @param  class-string<T>  $dtoClass
      * @return T[]
      *
      * @throws MappingErrorException
@@ -35,10 +33,10 @@ interface MapperServiceContract
 
     /**
      * @template T of object
+     * @template TModel of Model
      *
-     * @param class-string<T> $dtoClass
-     * @param Collection $data
-     *
+     * @param  class-string<T>  $dtoClass
+     * @param  Collection<int, TModel>  $data
      * @return T[]
      *
      * @throws MappingErrorException
