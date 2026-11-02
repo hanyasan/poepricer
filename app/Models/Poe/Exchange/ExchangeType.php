@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models\Poe;
+namespace App\Models\Poe\Exchange;
 
+use App\Models\Poe\PoeVersion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

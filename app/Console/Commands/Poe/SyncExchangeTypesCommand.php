@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands\Poe;
 
-use App\Models\Poe\ExchangeType;
+use App\Models\Poe\Exchange\ExchangeType;
 use App\Models\Poe\PoeVersion;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
