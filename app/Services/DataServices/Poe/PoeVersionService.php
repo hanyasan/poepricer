@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\DataServices;
+namespace App\Services\DataServices\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Enums\CacheTtlEnum;
@@ -8,22 +8,22 @@ use App\Models\Poe\PoeVersion;
 use App\Utility\Mapper\MapperServiceContract;
 use Illuminate\Support\Facades\Cache;
 
-/** @psalm-suppress ClassMustBeFinal */
-class PoeVersionService
+final readonly class PoeVersionService implements PoeVersionServiceContract
 {
-    private string $baseTag = 'poe_version';
+    private const string BASE_TAG = 'poe_version';
 
     public function __construct(
-        private readonly MapperServiceContract $mapper,
+        private MapperServiceContract $mapper,
     ) {}
 
     /**
      * @return PoeVersionDto[]
      */
+    #[\Override]
     public function getAll(): array
     {
         return Cache::remember(
-            $this->baseTag,
+            self::BASE_TAG,
             CacheTtlEnum::DAY->jiggle(),
             function () {
                 return $this->mapper->mapEloquentCollection(

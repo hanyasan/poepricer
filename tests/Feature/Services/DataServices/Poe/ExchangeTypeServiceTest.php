@@ -1,11 +1,11 @@
 <?php
 
-namespace Tests\Feature\Services\DataServices;
+namespace Tests\Feature\Services\DataServices\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\Models\Poe\Exchange\ExchangeType;
 use App\Models\Poe\PoeVersion;
-use App\Services\DataServices\ExchangeTypeService;
+use App\Services\DataServices\Poe\ExchangeTypeService;
 use Illuminate\Support\Facades\Cache;
 use Tests\FeatureTestCase;
 

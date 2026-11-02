@@ -89,4 +89,25 @@ final readonly class MapperService implements MapperServiceContract
         /** @var T[] */
         return $res;
     }
+
+    /**
+     * @template T of object
+     *
+     * @param  class-string<T>  $dtoClass
+     *
+     * @throws MappingErrorException
+     */
+    #[\Override]
+    public function mapEloquentModel(string $dtoClass, Model $model): object
+    {
+        try {
+            $mapper = (new MapperBuilder)->allowSuperfluousKeys()->mapper();
+
+            $res = $mapper->map($dtoClass, Source::array($model->toArray()));
+        } catch (MappingError) {
+            throw new MappingErrorException;
+        }
+
+        return $res;
+    }
 }

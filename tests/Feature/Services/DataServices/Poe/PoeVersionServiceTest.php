@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Feature\Services\DataServices;
+namespace Tests\Feature\Services\DataServices\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Models\Poe\PoeVersion;
-use App\Services\DataServices\PoeVersionService;
+use App\Services\DataServices\Poe\PoeVersionService;
 use Tests\FeatureTestCase;
 
 class PoeVersionServiceTest extends FeatureTestCase

@@ -42,4 +42,13 @@ interface MapperServiceContract
      * @throws MappingErrorException
      */
     public function mapEloquentCollection(string $dtoClass, Collection $data): array;
+
+    /**
+     * @template T of object
+     *
+     * @param  class-string<T>  $dtoClass
+     *
+     * @throws MappingErrorException
+     */
+    public function mapEloquentModel(string $dtoClass, Model $model): object;
 }
