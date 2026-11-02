@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Models\Poe\ExchangeType;
 use App\Models\Poe\PoeVersion;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\FeatureTestCase;
 
-class SyncExchangeTypesCommandTest extends TestCase
+class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
 {
     use DatabaseTransactions;
 
