@@ -12,12 +12,22 @@ interface PoeLeagueRepositoryContract
     /**
      * @return PoeLeagueDto[]
      */
-    public function getAllActive(): array;
+    public function getAllActiveWithRule(int $versionId): array;
+
+    /**
+     * @return PoeLeagueDto[]
+     */
+    public function getAllActiveWithNoRule(int $versionId): array;
+
+    /**
+     * @return PoeLeagueDto[]
+     */
+    public function getAllActive(int $versionId): array;
 
     /**
      * @param  array<int, int>  $leaguesId
      */
-    public function upsertDefaultRulesForLeagues(array $leaguesId): void;
+    public function upsertDefaultRulesForLeagues(array $leaguesId, int $minutesCheck): void;
 
     /**
      * @throws ModelNotFoundException<Model> when the league does not exist

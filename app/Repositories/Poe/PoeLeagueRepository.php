@@ -22,12 +22,12 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
      * @param  array<int, int>  $leaguesId
      */
     #[\Override]
-    public function upsertDefaultRulesForLeagues(array $leaguesId): void
+    public function upsertDefaultRulesForLeagues(array $leaguesId, int $minutesCheck): void
     {
-        $defaultRules = array_map(static function (int $id) {
+        $defaultRules = array_map(static function (int $id) use ($minutesCheck) {
             return [
                 'poe_league_id' => $id,
-                'minutes_check' => config('price_check.default_hours_check') * 60,
+                'minutes_check' => $minutesCheck,
             ];
         }, $leaguesId);
 
@@ -42,11 +42,46 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
      * @return PoeLeagueDto[]
      */
     #[\Override]
-    public function getAllActive(): array
+    public function getAllActiveWithRule(int $versionId): array
     {
         return $this->mapper->mapEloquentCollection(
             PoeLeagueDto::class,
-            $this->model->newQuery()->with('check_rule')->where('is_active', true)->get(),
+            $this->model->newQuery()
+                ->with('check_rule')
+                ->where('is_active', true)
+                ->where('poe_version_id', $versionId)
+                ->get(),
+        );
+    }
+
+    /**
+     * @return PoeLeagueDto[]
+     */
+    #[\Override]
+    public function getAllActiveWithNoRule(int $versionId): array
+    {
+        return $this->mapper->mapEloquentCollection(
+            PoeLeagueDto::class,
+            $this->model->newQuery()
+                ->where('is_active', true)
+                ->where('poe_version_id', $versionId)
+                ->whereDoesntHave('check_rule')
+                ->get(),
+        );
+    }
+
+    /**
+     * @return PoeLeagueDto[]
+     */
+    #[\Override]
+    public function getAllActive(int $versionId): array
+    {
+        return $this->mapper->mapEloquentCollection(
+            PoeLeagueDto::class,
+            $this->model->newQuery()
+                ->where('is_active', true)
+                ->where('poe_version_id', $versionId)
+                ->get(),
         );
     }
 

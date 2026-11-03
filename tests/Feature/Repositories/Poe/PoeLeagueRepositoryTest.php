@@ -78,16 +78,20 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $this->repository()->findActiveByNameVersion('Cant Find Me', $this->poeVersionId('poe2'));
     }
 
-    public function test_get_all_active_returns_only_active_leagues(): void
+    public function test_get_all_active_returns_only_active_leagues_of_the_version(): void
     {
-        $active = $this->league('Active League', isActive: true);
-        $inactive = $this->league('Inactive League', isActive: false);
+        $poe2Id = $this->poeVersionId('poe2');
 
-        $result = $this->repository()->getAllActive();
+        $active = $this->league('Active League', versionId: $poe2Id, isActive: true);
+        $inactive = $this->league('Inactive League', versionId: $poe2Id, isActive: false);
+        $otherVersion = $this->league('Other Version League', versionId: $this->poeVersionId('poe1'), isActive: true);
+
+        $result = $this->repository()->getAllActive($poe2Id);
 
         $this->assertContainsOnlyInstancesOf(PoeLeagueDto::class, $result);
         $this->assertContains($active->id, array_column($result, 'id'));
         $this->assertNotContains($inactive->id, array_column($result, 'id'));
+        $this->assertNotContains($otherVersion->id, array_column($result, 'id'));
         $this->assertEmpty(array_filter($result, static fn (PoeLeagueDto $dto): bool => ! $dto->is_active));
     }
 
@@ -95,7 +99,7 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
     {
         PoeLeague::query()->update(['is_active' => false]);
 
-        $this->assertSame([], $this->repository()->getAllActive());
+        $this->assertSame([], $this->repository()->getAllActive($this->poeVersionId('poe2')));
     }
 
     public function test_upsert_inserts_new_leagues(): void
@@ -148,13 +152,11 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $this->assertSame(2, PoeLeague::query()->where('league_name', 'Same Name League')->count());
     }
 
-    public function test_upsert_default_rules_uses_the_configured_interval(): void
+    public function test_upsert_default_rules_uses_the_given_interval(): void
     {
-        config(['price_check.default_hours_check' => 5]);
-
         $league = $this->league('Default Rule League');
 
-        $this->repository()->upsertDefaultRulesForLeagues([$league->id]);
+        $this->repository()->upsertDefaultRulesForLeagues([$league->id], 300);
 
         $this->assertDatabaseHas('league_check_rules', [
             'poe_league_id' => $league->id,
@@ -164,12 +166,10 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
 
     public function test_upsert_default_rules_updates_an_existing_rule(): void
     {
-        config(['price_check.default_hours_check' => 2]);
-
         $league = $this->league('Existing Rule League');
         $this->rule($league, 60);
 
-        $this->repository()->upsertDefaultRulesForLeagues([$league->id]);
+        $this->repository()->upsertDefaultRulesForLeagues([$league->id], 120);
 
         $this->assertSame(1, LeagueCheckRule::query()->where('poe_league_id', $league->id)->count());
         $this->assertDatabaseHas('league_check_rules', [
@@ -178,11 +178,28 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         ]);
     }
 
+    public function test_upsert_default_rules_writes_the_same_interval_for_every_league(): void
+    {
+        $first = $this->league('First Default Rule League');
+        $second = $this->league('Second Default Rule League');
+
+        $this->repository()->upsertDefaultRulesForLeagues([$first->id, $second->id], 45);
+
+        $this->assertDatabaseHas('league_check_rules', [
+            'poe_league_id' => $first->id,
+            'minutes_check' => 45,
+        ]);
+        $this->assertDatabaseHas('league_check_rules', [
+            'poe_league_id' => $second->id,
+            'minutes_check' => 45,
+        ]);
+    }
+
     public function test_upsert_default_rules_accepts_an_empty_list(): void
     {
         $before = LeagueCheckRule::query()->count();
 
-        $this->repository()->upsertDefaultRulesForLeagues([]);
+        $this->repository()->upsertDefaultRulesForLeagues([], 300);
 
         $this->assertSame($before, LeagueCheckRule::query()->count());
     }
