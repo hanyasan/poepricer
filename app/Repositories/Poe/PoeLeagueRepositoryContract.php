@@ -48,9 +48,4 @@ interface PoeLeagueRepositoryContract
      * }>  $paramsWithValues
      */
     public function upsert(array $paramsWithValues): void;
-
-    /**
-     * @return PoeLeagueWithLastCoreDto[]
-     */
-    public function getActiveWithLatestCore(): array;
 }

@@ -16,11 +16,12 @@ return new class extends Migration
             $table->id();
 
             $table->string('league_name');
+            $table->string('ninja_league_id')->nullable()->after('league_name');
             $table->boolean('is_active')->default(false);
 
             $table->foreignIdFor(PoeVersion::class, 'poe_version_id')->constrained();
 
-            $table->unique(['league_name', 'poe_version_id']);
+            $table->unique(['ninja_league_id', 'poe_version_id']);
         });
     }
 

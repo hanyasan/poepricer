@@ -3,7 +3,6 @@
 namespace App\Repositories\Poe\Exchange\ExchangeItem;
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
-use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemWithPricesDto;
 
 interface ExchangeItemRepositoryContract
 {
@@ -13,15 +12,11 @@ interface ExchangeItemRepositoryContract
     public function getAllByLeague(int $leagueId): array;
 
     /**
-     * @return ExchangeItemWithPricesDto[]
-     */
-    public function getAllByLeagueWithPriceByCore(int $leagueId, int $coreId): array;
-
-    /**
      * @param  array<int, array{
      *     name: string,
      *     trade_id: string,
      *     poe_league_id: int,
+     *     poe_category: string,
      * }>  $insertData
      */
     public function upsert(array $insertData): void;

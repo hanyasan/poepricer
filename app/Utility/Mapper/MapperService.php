@@ -94,6 +94,7 @@ final readonly class MapperService implements MapperServiceContract
      * @template T of object
      *
      * @param  class-string<T>  $dtoClass
+     * @return T
      *
      * @throws MappingErrorException
      */

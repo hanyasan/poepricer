@@ -17,10 +17,12 @@ return new class extends Migration
 
             $table->string('name');
             $table->string('trade_id');
+            $table->string('poe_category')->nullable();
 
             $table->foreignIdFor(PoeLeague::class, 'poe_league_id')->constrained();
 
             $table->unique(['trade_id', 'poe_league_id']);
+            $table->index('poe_league_id');
         });
     }
 

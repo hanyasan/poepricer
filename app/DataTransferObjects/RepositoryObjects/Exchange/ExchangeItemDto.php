@@ -9,5 +9,6 @@ final readonly class ExchangeItemDto
         public string $name,
         public string $trade_id,
         public int $poe_league_id,
+        public ?string $poe_category,
     ) {}
 }

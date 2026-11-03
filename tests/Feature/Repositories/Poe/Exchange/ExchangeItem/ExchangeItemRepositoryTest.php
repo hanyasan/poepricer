@@ -1,13 +1,9 @@
 <?php
 
-namespace Tests\Feature\Repositories\Poe\Exchange\ExchangeItem;
+namespace Tests\Feature\Repositories\Poe\Exchange\PriceCheck;
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
-use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemPriceDto;
-use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemWithPricesDto;
 use App\Models\Poe\Exchange\ExchangeItem;
-use App\Models\Poe\Exchange\ExchangeItemPrice;
-use App\Models\Poe\Exchange\PriceCheckCore;
 use App\Models\Poe\PoeLeague;
 use App\Models\Poe\PoeVersion;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
@@ -27,16 +23,36 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
         $result = $this->repository()->getAllByLeague($league->id);
 
         $this->assertContainsOnlyInstancesOf(ExchangeItemDto::class, $result);
-        $this->assertEqualsCanonicalizing(
-            [$chaos->id, ExchangeItem::query()->where('trade_id', 'divine')->value('id')],
+        $this->assertCount(2, $result);
+        $this->assertContains($chaos->id, array_column($result, 'id'));
+        $this->assertNotContains(
+            ExchangeItem::query()->where('trade_id', 'exalted')->value('id'),
             array_column($result, 'id'),
         );
+    }
 
-        $chaosDto = $this->findByTradeId($result, 'chaos');
+    public function test_maps_the_item_fields(): void
+    {
+        $league = $this->league('Mapped Items League');
+        $divine = $this->item($league, 'divine', 'Divine Orb', 'Currency');
 
-        $this->assertSame('Chaos Orb', $chaosDto->name);
-        $this->assertSame('chaos', $chaosDto->trade_id);
-        $this->assertSame($league->id, $chaosDto->poe_league_id);
+        $dto = $this->findByTradeId($this->repository()->getAllByLeague($league->id), 'divine');
+
+        $this->assertSame($divine->id, $dto->id);
+        $this->assertSame('Divine Orb', $dto->name);
+        $this->assertSame('divine', $dto->trade_id);
+        $this->assertSame($league->id, $dto->poe_league_id);
+        $this->assertSame('Currency', $dto->poe_category);
+    }
+
+    public function test_maps_a_missing_category_as_null(): void
+    {
+        $league = $this->league('Uncategorised Items League');
+        $this->item($league, 'chaos', 'Chaos Orb');
+
+        $dto = $this->findByTradeId($this->repository()->getAllByLeague($league->id), 'chaos');
+
+        $this->assertNull($dto->poe_category);
     }
 
     public function test_returns_empty_array_when_the_league_has_no_items(): void
@@ -46,106 +62,41 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
         $this->assertSame([], $this->repository()->getAllByLeague($league->id));
     }
 
-    public function test_returns_types_of_the_league_whatever_prices_they_have(): void
-    {
-        $league = $this->league('Priced League');
-
-        $divine = $this->item($league, 'divine', 'Divine Orb');
-        $chaos = $this->item($league, 'chaos', 'Chaos Orb');
-
-        $core = $this->core($league);
-        $this->price($divine, $core, 210.0);
-
-        $result = $this->repository()->getAllByLeagueWithPriceByCore($league->id, $core->id);
-
-        $this->assertContainsOnlyInstancesOf(ExchangeItemWithPricesDto::class, $result);
-        $this->assertCount(2, $result);
-
-        $divineDto = $this->findByTradeIdWithPrices($result, 'divine');
-        $chaosDto = $this->findByTradeIdWithPrices($result, 'chaos');
-
-        $this->assertCount(1, $divineDto->prices);
-        $this->assertSame([], $chaosDto->prices);
-    }
-
-    public function test_returns_only_prices_of_the_requested_core(): void
-    {
-        $league = $this->league('Two Cores League');
-
-        $divine = $this->item($league, 'divine', 'Divine Orb');
-
-        $older = $this->core($league, '2030-01-01 10:00:00');
-        $newer = $this->core($league, '2030-01-01 12:00:00');
-
-        $this->price($divine, $older, 200.0);
-        $this->price($divine, $newer, 250.0);
-
-        $olderResult = $this->repository()->getAllByLeagueWithPriceByCore($league->id, $older->id);
-        $newerResult = $this->repository()->getAllByLeagueWithPriceByCore($league->id, $newer->id);
-
-        $this->assertSame([200.0], array_column($this->findByTradeIdWithPrices($olderResult, 'divine')->prices, 'rate'));
-        $this->assertSame([250.0], array_column($this->findByTradeIdWithPrices($newerResult, 'divine')->prices, 'rate'));
-    }
-
-    public function test_maps_prices_to_dtos(): void
-    {
-        $league = $this->league('Mapped Prices League');
-
-        $divine = $this->item($league, 'divine', 'Divine Orb');
-        $core = $this->core($league);
-        $this->price($divine, $core, 2.5);
-
-        $result = $this->repository()->getAllByLeagueWithPriceByCore($league->id, $core->id);
-
-        $prices = $this->findByTradeIdWithPrices($result, 'divine')->prices;
-
-        $this->assertCount(1, $prices);
-        $this->assertInstanceOf(ExchangeItemPriceDto::class, $prices[0]);
-        $this->assertSame(2.5, $prices[0]->rate);
-        $this->assertSame(
-            ExchangeItemPrice::query()->where('exchange_item_id', $divine->id)->value('id'),
-            $prices[0]->id,
-        );
-    }
-
-    public function test_returns_empty_array_when_the_league_has_no_items_for_the_core(): void
-    {
-        $league = $this->league('No Items For Core League');
-
-        $this->assertSame(
-            [],
-            $this->repository()->getAllByLeagueWithPriceByCore($league->id, $this->core($league)->id),
-        );
-    }
-
     public function test_upsert_inserts_items(): void
     {
         $league = $this->league('Upsert Items League');
 
         $this->repository()->upsert([
-            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $league->id],
-            ['name' => 'Divine Orb', 'trade_id' => 'divine', 'poe_league_id' => $league->id],
+            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $league->id, 'poe_category' => 'Currency'],
+            ['name' => 'Divine Orb', 'trade_id' => 'divine', 'poe_league_id' => $league->id, 'poe_category' => 'Currency'],
         ]);
 
         $this->assertDatabaseHas('exchange_items', [
             'name' => 'Chaos Orb',
             'trade_id' => 'chaos',
             'poe_league_id' => $league->id,
+            'poe_category' => 'Currency',
         ]);
         $this->assertDatabaseHas('exchange_items', [
             'name' => 'Divine Orb',
             'trade_id' => 'divine',
             'poe_league_id' => $league->id,
+            'poe_category' => 'Currency',
         ]);
     }
 
-    public function test_upsert_updates_the_name_of_an_existing_item(): void
+    public function test_upsert_updates_name_and_category_of_an_existing_item(): void
     {
         $league = $this->league('Upsert Rename League');
-        $this->item($league, 'divine', 'Divine Orb');
+        $this->item($league, 'divine', 'Divine Orb', 'Old Category');
 
         $this->repository()->upsert([
-            ['name' => 'Divine Orb Renamed', 'trade_id' => 'divine', 'poe_league_id' => $league->id],
+            [
+                'name' => 'Divine Orb Renamed',
+                'trade_id' => 'divine',
+                'poe_league_id' => $league->id,
+                'poe_category' => 'New Category',
+            ],
         ]);
 
         $this->assertSame(
@@ -159,6 +110,7 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
             'trade_id' => 'divine',
             'poe_league_id' => $league->id,
             'name' => 'Divine Orb Renamed',
+            'poe_category' => 'New Category',
         ]);
     }
 
@@ -168,12 +120,21 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
         $otherLeague = $this->league('Upsert League Two');
 
         $this->repository()->upsert([
-            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $league->id],
-            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $otherLeague->id],
+            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $league->id, 'poe_category' => 'Currency'],
+            ['name' => 'Chaos Orb', 'trade_id' => 'chaos', 'poe_league_id' => $otherLeague->id, 'poe_category' => 'Currency'],
         ]);
 
         $this->assertDatabaseHas('exchange_items', ['trade_id' => 'chaos', 'poe_league_id' => $league->id]);
         $this->assertDatabaseHas('exchange_items', ['trade_id' => 'chaos', 'poe_league_id' => $otherLeague->id]);
+    }
+
+    public function test_upsert_with_no_rows_persists_nothing(): void
+    {
+        $before = ExchangeItem::query()->count();
+
+        $this->repository()->upsert([]);
+
+        $this->assertSame($before, ExchangeItem::query()->count());
     }
 
     private function repository(): ExchangeItemRepositoryContract
@@ -187,38 +148,17 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
             'league_name' => $name,
             'ninja_league_id' => 'ninja-'.strtolower(str_replace(' ', '-', $name)),
             'is_active' => true,
-            'poe_version_id' => $this->poeVersionId('poe2'),
+            'poe_version_id' => (int) PoeVersion::query()->where('version', 'poe2')->value('id'),
         ]);
     }
 
-    private function poeVersionId(string $version): int
-    {
-        return (int) PoeVersion::query()->where('version', $version)->value('id');
-    }
-
-    private function item(PoeLeague $league, string $tradeId, string $name): ExchangeItem
+    private function item(PoeLeague $league, string $tradeId, string $name, ?string $category = null): ExchangeItem
     {
         return ExchangeItem::query()->create([
             'name' => $name,
             'trade_id' => $tradeId,
+            'poe_category' => $category,
             'poe_league_id' => $league->id,
-        ]);
-    }
-
-    private function core(PoeLeague $league, string $createdAt = '2030-01-01 10:00:00'): PriceCheckCore
-    {
-        return PriceCheckCore::query()->create([
-            'poe_league_id' => $league->id,
-            'created_at' => $createdAt,
-        ]);
-    }
-
-    private function price(ExchangeItem $item, PriceCheckCore $core, float $rate): void
-    {
-        ExchangeItemPrice::query()->create([
-            'rate' => $rate,
-            'exchange_item_id' => $item->id,
-            'price_check_core_id' => $core->id,
         ]);
     }
 
@@ -234,19 +174,5 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
         }
 
         $this->fail("No exchange item dto with trade id [{$tradeId}] was returned.");
-    }
-
-    /**
-     * @param  ExchangeItemWithPricesDto[]  $items
-     */
-    private function findByTradeIdWithPrices(array $items, string $tradeId): ExchangeItemWithPricesDto
-    {
-        foreach ($items as $item) {
-            if ($item->trade_id === $tradeId) {
-                return $item;
-            }
-        }
-
-        $this->fail("No exchange item with prices dto with trade id [{$tradeId}] was returned.");
     }
 }

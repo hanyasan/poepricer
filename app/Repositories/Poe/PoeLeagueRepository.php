@@ -131,40 +131,4 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
             ['league_name', 'is_active'],
         );
     }
-
-    /**
-     * @return PoeLeagueWithLastCoreDto[]
-     */
-    #[\Override]
-    public function getActiveWithLatestCore(): array
-    {
-        $latestCoreDates = PriceCheckCore::query()
-            ->select([
-                'price_check_cores.poe_league_id as last_core_poe_league_id',
-                DB::raw('MAX(created_at) as last_core_created_at'),
-            ])
-            ->groupBy('last_core_poe_league_id');
-
-        $latestCores = PriceCheckCore::query()
-            ->select([
-                'price_check_cores.poe_league_id',
-                'price_check_cores.created_at as last_core_created_at',
-                'price_check_cores.id as last_core_id',
-            ])
-            ->joinSub($latestCoreDates, 'latest_core_dates', function (JoinClause $join) {
-                $join->on('latest_core_dates.last_core_poe_league_id', '=', 'price_check_cores.poe_league_id')
-                    ->whereRaw(DB::raw('latest_core_dates.last_core_created_at = price_check_cores.created_at'));
-            });
-
-        return $this->mapper->mapEloquentCollection(
-            PoeLeagueWithLastCoreDto::class,
-            $this->model->newQuery()
-                ->with('check_rule')
-                ->leftJoinSub($latestCores, 'latest_cores', function (JoinClause $join) {
-                    $join->on('poe_leagues.id', '=', 'latest_cores.poe_league_id');
-                })
-                ->where('is_active', true)
-                ->get(),
-        );
-    }
 }

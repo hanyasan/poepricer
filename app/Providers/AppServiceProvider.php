@@ -6,6 +6,8 @@ use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepository;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\ExchangeItemPrice\ExchangeItemPriceRepository;
 use App\Repositories\Poe\Exchange\ExchangeItemPrice\ExchangeItemPriceRepositoryContract;
+use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepository;
+use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheckCore\PriceCheckCoreRepository;
 use App\Repositories\Poe\Exchange\PriceCheckCore\PriceCheckCoreRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepository;
@@ -26,6 +28,7 @@ final class AppServiceProvider extends ServiceProvider
         MapperServiceContract::class => MapperService::class,
         ExchangeItemRepositoryContract::class => ExchangeItemRepository::class,
         ExchangeItemPriceRepositoryContract::class => ExchangeItemPriceRepository::class,
+        PriceCheckRepositoryContract::class => PriceCheckRepository::class,
         PriceCheckCoreRepositoryContract::class => PriceCheckCoreRepository::class,
         PoeLeagueRepositoryContract::class => PoeLeagueRepository::class,
         ExchangeTypeServiceContract::class => ExchangeTypeService::class,

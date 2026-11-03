@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('value');
 
             $table->foreignIdFor(PoeVersion::class, 'poe_version_id')->constrained();
+
+            $table->unique(['poe_version_id', 'value']);
         });
     }
 

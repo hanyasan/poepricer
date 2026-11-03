@@ -9,8 +9,8 @@ final readonly class PriceCheckCoreDto
      */
     public function __construct(
         public int $id,
-        public string $created_at,
-        public int $poe_league_id,
+        public int $price_check_id,
+        public int $exchange_type_id,
         public array $price_check_core_types,
     ) {}
 }
