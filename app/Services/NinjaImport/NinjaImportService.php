@@ -2,14 +2,23 @@
 
 namespace App\Services\NinjaImport;
 
+use App\DataTransferObjects\ParsingObjects\Exchange\PoeNinjaExchangeCore;
+use App\DataTransferObjects\ParsingObjects\Exchange\PoeNinjaExchangeItem;
+use App\DataTransferObjects\ParsingObjects\Exchange\PoeNinjaExchangeLine;
 use App\DataTransferObjects\ParsingObjects\PoeNinjaLeague;
+use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
+use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Enums\Tags\PoeLeagueTagEnum;
 use App\Exceptions\Mapping\MapInvalidSourceException;
 use App\Exceptions\Mapping\MappingErrorException;
 use App\HttpClients\NinjaClient;
+use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
+use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
+use App\Services\DataServices\Poe\ExchangeTypeServiceContract;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -24,7 +33,30 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         private PoeLeagueRepositoryContract $poeLeagueRepository,
         private PoeVersionServiceContract $poeVersionService,
         private NinjaClient $ninjaClient,
+        private PriceCheckRepositoryContract $priceCheckRepository,
+        private ExchangeTypeServiceContract $exchangeTypeService,
+        private ExchangeItemRepositoryContract $exchangeItemRepository,
     ) {}
+
+    #[\Override]
+    public function checkExchangePrices(
+        PoeLeagueDto $league,
+        PoeVersionDto $version,
+    ): void {
+        $exchangeTypes = $this->exchangeTypeService->getByVersion($version->id);
+
+        $priceCheck = $this->priceCheckRepository->createPriceCheck($league->id);
+
+        foreach ($exchangeTypes as $exchangeType) {
+            $this->importLeagueExchangePrices(
+                $league,
+                $priceCheck,
+                $version,
+                $exchangeType,
+            );
+        }
+
+    }
 
     #[\Override]
     public function updateAllLeaguesFromNinja(): void
@@ -71,6 +103,24 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         Cache::tags([PoeLeagueTagEnum::league_version->name.$version->id])->flush();
     }
 
+    /**
+     * @return array<int, array{
+     *      rate: float,
+     *      exchange_item_trade_id: string,
+     *      name: string,
+     * }>
+     */
+    private function prepCoreTypes(PoeNinjaExchangeCore $core): array
+    {
+        return array_map(static function (PoeNinjaExchangeItem $item) use ($core) {
+            return [
+                'rate' => $core->rates[$item->id] ?? 1,
+                'exchange_item_trade_id' => $item->id,
+                'name' => $item->name,
+            ];
+        }, $core->items);
+    }
+
     private function constructUpsertData(
         Collection $ninjaLeagues,
         Collection $currentLeagues,
@@ -97,5 +147,76 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
             ])
             ->merge($leaguesToInsert)
             ->toArray();
+    }
+
+    private function importLeagueExchangePrices(
+        PoeLeagueDto $league,
+        PriceCheckDto $priceCheck,
+        PoeVersionDto $version,
+        ExchangeTypeDto $exchangeType,
+    ): void {
+        $exchangeResponse = $this->ninjaClient->getExchangeTypePrices(
+            $version->version,
+            $league->ninja_league_id,
+            $exchangeType->value,
+        );
+
+        DB::transaction(function () use ($league, $priceCheck, $exchangeResponse, $exchangeType) {
+            $coreDto = $this->priceCheckRepository->createCore(
+                $priceCheck->id,
+                $exchangeType->id,
+                $this->prepCoreTypes($exchangeResponse->core),
+            );
+
+            $this->exchangeItemRepository->upsert(
+                array_map(fn (PoeNinjaExchangeItem $item) => [
+                    'name' => $item->name,
+                    'trade_id' => $item->id,
+                    'poe_category' => $item->category,
+                    'poe_league_id' => $league->id,
+                ], $exchangeResponse->items)
+            );
+
+            $this->priceCheckRepository->insertPrices($this->prepPrices(
+                $this->exchangeItemRepository->getAllByLeague($league->id),
+                $coreDto->id,
+                $exchangeResponse->lines,
+            ));
+        });
+    }
+
+    /**
+     * @param  array<int, ExchangeItemDto>  $exchangeItems
+     * @param  array<int, PoeNinjaExchangeLine>  $items
+     * @return array<int, array{
+     *     rate: float,
+     *     price_check_core_id: int,
+     *     exchange_item_id: int,
+     * }>
+     */
+    private function prepPrices(
+        array $exchangeItems,
+        int $coreId,
+        array $items,
+    ): array {
+        $items = collect($items);
+        $prices = [];
+
+        foreach ($exchangeItems as $exchangeItem) {
+            /** @var PoeNinjaExchangeLine|null $tradeItem */
+            $tradeItem = $items->firstWhere('id', $exchangeItem->trade_id);
+
+            if (! $tradeItem || is_null($tradeItem->primaryValue)) {
+                continue;
+            }
+
+            $prices[] = [
+                'rate' => $tradeItem->primaryValue,
+                'price_check_core_id' => $coreId,
+                'exchange_item_id' => $exchangeItem->id,
+            ];
+        }
+
+        return $prices;
     }
 }

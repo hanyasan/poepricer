@@ -2,14 +2,24 @@
 
 namespace Tests\Feature\Services\NinjaImport;
 
+use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
+use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Enums\Tags\PoeLeagueTagEnum;
+use App\Models\Poe\Exchange\ExchangeItem;
+use App\Models\Poe\Exchange\ExchangeItemPrice;
+use App\Models\Poe\Exchange\ExchangeType;
+use App\Models\Poe\Exchange\PriceCheck;
+use App\Models\Poe\Exchange\PriceCheckCore;
 use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
 use App\Models\Poe\PoeVersion;
+use App\Repositories\Poe\PoeLeagueRepositoryContract;
 use App\Services\NinjaImport\NinjaImportServiceContract;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\FeatureTestCase;
@@ -278,6 +288,373 @@ class NinjaImportServiceTest extends FeatureTestCase
         $this->service()->updateAllLeaguesFromNinja();
 
         $this->assertDatabaseHas('poe_leagues', ['id' => $league->id, 'is_active' => true]);
+    }
+
+    public function test_it_creates_one_price_check_for_the_league(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload());
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertSame(1, PriceCheck::query()->where('poe_league_id', $league->id)->count());
+    }
+
+    public function test_it_requests_prices_for_each_exchange_type_of_the_version(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $currency = $this->exchangeType('Currency', $version);
+        $runes = $this->exchangeType('Runes', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload());
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn (Request $request): bool => $request->url()
+            === 'https://poe.ninja/poe2/api/economy/exchange/current/overview?league=standard&type='.$currency->value);
+        Http::assertSent(fn (Request $request): bool => $request->url()
+            === 'https://poe.ninja/poe2/api/economy/exchange/current/overview?league=standard&type='.$runes->value);
+    }
+
+    public function test_it_does_not_request_prices_for_exchange_types_of_another_version(): void
+    {
+        $version = $this->versionRow('poe2');
+        $otherVersion = $this->versionRow('poe1');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $otherVersion);
+        $runes = $this->exchangeType('Runes', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload());
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn (Request $request): bool => $request->url()
+            === 'https://poe.ninja/poe2/api/economy/exchange/current/overview?league=standard&type='.$runes->value);
+    }
+
+    public function test_it_persists_the_core_types_ninja_reports(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            coreItems: [
+                ['id' => 'chaos', 'name' => 'Chaos Orb', 'category' => 'Currency'],
+                ['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency'],
+            ],
+            rates: ['chaos' => 1.0, 'divine' => 210.5],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $coreId = $this->coreIdOf($league);
+
+        $this->assertDatabaseHas('price_check_core_types', [
+            'exchange_item_trade_id' => 'chaos',
+            'name' => 'Chaos Orb',
+            'rate' => 1.0,
+            'price_check_core_id' => $coreId,
+        ]);
+        $this->assertDatabaseHas('price_check_core_types', [
+            'exchange_item_trade_id' => 'divine',
+            'name' => 'Divine Orb',
+            'rate' => 210.5,
+            'price_check_core_id' => $coreId,
+        ]);
+    }
+
+    public function test_it_defaults_a_missing_core_rate_to_one(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            coreItems: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+            rates: ['chaos' => 1.0],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertDatabaseHas('price_check_core_types', [
+            'exchange_item_trade_id' => 'divine',
+            'rate' => 1.0,
+            'price_check_core_id' => $this->coreIdOf($league),
+        ]);
+    }
+
+    public function test_it_links_each_core_to_its_exchange_type(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $currency = $this->exchangeType('Currency', $version);
+        $runes = $this->exchangeType('Runes', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            coreItems: [['id' => 'chaos', 'name' => 'Chaos Orb', 'category' => 'Currency']],
+            rates: ['chaos' => 1.0],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $priceCheckId = $this->priceCheckIdOf($league);
+
+        $this->assertSame(2, PriceCheckCore::query()->where('price_check_id', $priceCheckId)->count());
+        $this->assertDatabaseHas('price_check_cores', [
+            'price_check_id' => $priceCheckId,
+            'exchange_type_id' => $currency->id,
+        ]);
+        $this->assertDatabaseHas('price_check_cores', [
+            'price_check_id' => $priceCheckId,
+            'exchange_type_id' => $runes->id,
+        ]);
+    }
+
+    public function test_it_persists_exchange_items_for_the_league(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            items: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertDatabaseHas('exchange_items', [
+            'name' => 'Divine Orb',
+            'trade_id' => 'divine',
+            'poe_category' => 'Currency',
+            'poe_league_id' => $league->id,
+        ]);
+    }
+
+    public function test_it_persists_a_price_from_the_matching_line(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['divine' => 210.5],
+            items: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $coreId = $this->coreIdOf($league);
+        $itemId = (int) ExchangeItem::query()
+            ->where('trade_id', 'divine')
+            ->where('poe_league_id', $league->id)
+            ->value('id');
+
+        $this->assertSame(
+            [210.5],
+            ExchangeItemPrice::query()->where('price_check_core_id', $coreId)->pluck('rate')->all(),
+        );
+        $this->assertDatabaseHas('exchange_item_prices', [
+            'exchange_item_id' => $itemId,
+            'price_check_core_id' => $coreId,
+        ]);
+    }
+
+    public function test_it_skips_items_without_a_matching_line(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['exalted' => 12.5],
+            items: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertDatabaseHas('exchange_items', [
+            'trade_id' => 'divine',
+            'poe_league_id' => $league->id,
+        ]);
+        $this->assertSame(0, $this->priceCountOf($league));
+    }
+
+    public function test_it_skips_items_whose_line_has_no_primary_value(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['divine' => null],
+            items: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertDatabaseHas('exchange_items', [
+            'trade_id' => 'divine',
+            'poe_league_id' => $league->id,
+        ]);
+        $this->assertSame(0, $this->priceCountOf($league));
+    }
+
+    public function test_it_does_not_price_items_of_another_league(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $otherLeague = $this->importLeague('Hardcore', $version, 'hardcore');
+        $this->exchangeType('Currency', $version);
+
+        $foreignItem = $this->exchangeItem($otherLeague, 'exalted', 'Exalted Orb');
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['divine' => 210.5, 'exalted' => 12.5],
+            items: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'Currency']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+
+        $this->assertDatabaseMissing('exchange_item_prices', ['exchange_item_id' => $foreignItem->id]);
+        $this->assertSame(1, $this->priceCountOf($league));
+    }
+
+    public function test_it_propagates_the_request_error_when_ninja_fails(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('Standard', $version);
+        $this->exchangeType('Currency', $version);
+
+        Http::fake([
+            'poe.ninja/poe2/api/economy/exchange/current/overview*' => Http::response(['error' => 'boom'], 500),
+        ]);
+        $this->expectException(RequestException::class);
+
+        $this->service()->checkExchangePrices($this->leagueDto($league), $this->versionDto($version));
+    }
+
+    /**
+     * @param  callable(): array<string, mixed>  $payload
+     */
+    private function fakeExchangePrices(callable $payload): void
+    {
+        Http::fake([
+            'poe.ninja/poe2/api/economy/exchange/current/overview*' => fn (): mixed => Http::response($payload()),
+        ]);
+    }
+
+    /**
+     * @param  list<array{id: string, name: string, category: string}>  $coreItems
+     * @param  array<string, float>  $rates
+     * @param  array<string, float|null>  $lines
+     * @param  list<array{id: string, name: string, category: string}>  $items
+     * @return array<string, mixed>
+     */
+    private function exchangePayload(
+        array $coreItems = [],
+        array $rates = [],
+        array $lines = [],
+        array $items = [],
+    ): array {
+        return [
+            'core' => [
+                'items' => $coreItems,
+                'rates' => $rates,
+            ],
+            'lines' => array_map(
+                static fn (string $id, ?float $primaryValue): array => [
+                    'id' => $id,
+                    'primaryValue' => $primaryValue,
+                ],
+                array_keys($lines),
+                $lines,
+            ),
+            'items' => $items,
+        ];
+    }
+
+    private function leagueDto(PoeLeague $league): PoeLeagueDto
+    {
+        return $this->app->make(PoeLeagueRepositoryContract::class)->find($league->id);
+    }
+
+    private function versionDto(PoeVersion $version): PoeVersionDto
+    {
+        return new PoeVersionDto($version->id, $version->version);
+    }
+
+    private function priceCheckIdOf(PoeLeague $league): int
+    {
+        return (int) PriceCheck::query()->where('poe_league_id', $league->id)->value('id');
+    }
+
+    private function coreIdOf(PoeLeague $league): int
+    {
+        return (int) PriceCheckCore::query()
+            ->where('price_check_id', $this->priceCheckIdOf($league))
+            ->value('id');
+    }
+
+    private function priceCountOf(PoeLeague $league): int
+    {
+        return ExchangeItemPrice::query()
+            ->whereIn('exchange_item_id', ExchangeItem::query()
+                ->where('poe_league_id', $league->id)
+                ->select('id'))
+            ->count();
+    }
+
+    /**
+     * Each test owns its own version row, so the exchange types that the import reads are
+     * only the ones the test created. The version string stays a real one because it
+     * becomes the path segment of the poe.ninja request.
+     */
+    private function versionRow(string $version): PoeVersion
+    {
+        $id = (int) DB::table('poe_versions')->max('id') + 1;
+
+        DB::table('poe_versions')->insert(['id' => $id, 'version' => $version]);
+
+        return PoeVersion::query()->findOrFail($id);
+    }
+
+    private function importLeague(
+        string $name,
+        PoeVersion $version,
+        string $ninjaLeagueId = 'standard',
+    ): PoeLeague {
+        return PoeLeague::query()->create([
+            'league_name' => $name,
+            'ninja_league_id' => $ninjaLeagueId,
+            'is_active' => true,
+            'poe_version_id' => $version->id,
+        ]);
+    }
+
+    private function exchangeType(string $value, PoeVersion $version): ExchangeType
+    {
+        return ExchangeType::query()->create([
+            'category' => $value,
+            'value' => $value,
+            'poe_version_id' => $version->id,
+        ]);
+    }
+
+    private function exchangeItem(PoeLeague $league, string $tradeId, string $name): ExchangeItem
+    {
+        return ExchangeItem::query()->create([
+            'name' => $name,
+            'trade_id' => $tradeId,
+            'poe_category' => 'Currency',
+            'poe_league_id' => $league->id,
+        ]);
     }
 
     private function service(): NinjaImportServiceContract

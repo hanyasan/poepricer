@@ -27,9 +27,7 @@ final class AppServiceProvider extends ServiceProvider
     public array $singletons = [
         MapperServiceContract::class => MapperService::class,
         ExchangeItemRepositoryContract::class => ExchangeItemRepository::class,
-        ExchangeItemPriceRepositoryContract::class => ExchangeItemPriceRepository::class,
         PriceCheckRepositoryContract::class => PriceCheckRepository::class,
-        PriceCheckCoreRepositoryContract::class => PriceCheckCoreRepository::class,
         PoeLeagueRepositoryContract::class => PoeLeagueRepository::class,
         ExchangeTypeServiceContract::class => ExchangeTypeService::class,
         PoeVersionServiceContract::class => PoeVersionService::class,

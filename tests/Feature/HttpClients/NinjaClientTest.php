@@ -214,7 +214,7 @@ class NinjaClientTest extends FeatureTestCase
         return [
             'core' => [
                 'items' => [
-                    ['id' => 'chaos', 'name' => 'Chaos Orb'],
+                    ['id' => 'chaos', 'name' => 'Chaos Orb', 'category' => 'Currency'],
                 ],
                 'rates' => ['chaos' => 1.0, 'divine' => 0.0089],
             ],
@@ -223,7 +223,7 @@ class NinjaClientTest extends FeatureTestCase
                 ['id' => 'line-2'],
             ],
             'items' => [
-                ['id' => 'item-1', 'name' => 'Divine Orb'],
+                ['id' => 'item-1', 'name' => 'Divine Orb', 'category' => 'Currency'],
             ],
         ];
     }

@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Carbon $updated_at
  * @property-read null|LeagueCheckRule $check_rule
  * @property string $league_name
- * @property string|null $ninja_league_id
+ * @property string $ninja_league_id
  * @property bool $is_active
  * @property-read int $poe_version_id
  * @property-read PoeVersion $poeVersion

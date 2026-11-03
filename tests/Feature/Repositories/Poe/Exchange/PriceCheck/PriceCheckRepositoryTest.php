@@ -52,11 +52,11 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Create Core League');
         $priceCheck = $this->priceCheck($league);
-        $exchangeType = $this->exchangeType('Currency');
+        $exchangeType = $this->exchangeType('Currency1');
 
         $dto = $this->repository()->createCore($priceCheck->id, $exchangeType->id, [
-            ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos', 'name' => 'Chaos Orb'],
-            ['rate' => 210.0, 'exchange_item_trade_id' => 'divine', 'name' => 'Divine Orb'],
+            ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos1', 'name' => 'chaos1 Orb'],
+            ['rate' => 210.0, 'exchange_item_trade_id' => 'divine1111', 'name' => 'divine111 Orb'],
         ]);
 
         $this->assertInstanceOf(PriceCheckCoreDto::class, $dto);
@@ -77,21 +77,21 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Create Core Types League');
         $priceCheck = $this->priceCheck($league);
-        $exchangeType = $this->exchangeType('Currency');
+        $exchangeType = $this->exchangeType('Currency1');
 
         $dto = $this->repository()->createCore($priceCheck->id, $exchangeType->id, [
-            ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos', 'name' => 'Chaos Orb'],
-            ['rate' => 210.0, 'exchange_item_trade_id' => 'divine', 'name' => 'Divine Orb'],
+            ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos1', 'name' => 'chaos1 Orb'],
+            ['rate' => 210.0, 'exchange_item_trade_id' => 'divine111', 'name' => 'divine111 Orb'],
         ]);
 
         $this->assertCount(2, $dto->price_check_core_types);
         $this->assertContainsOnlyInstancesOf(PriceCheckCoreTypeDto::class, $dto->price_check_core_types);
 
-        $divine = $this->findType($dto->price_check_core_types, 'divine');
+        $divine111 = $this->findType($dto->price_check_core_types, 'divine111');
 
-        $this->assertSame(210.0, $divine->rate);
-        $this->assertSame('Divine Orb', $divine->name);
-        $this->assertSame($dto->id, $divine->price_check_core_id);
+        $this->assertSame(210.0, $divine111->rate);
+        $this->assertSame('divine111 Orb', $divine111->name);
+        $this->assertSame($dto->id, $divine111->price_check_core_id);
     }
 
     public function test_create_core_without_types_persists_only_the_core(): void
@@ -99,7 +99,7 @@ class PriceCheckRepositoryTest extends FeatureTestCase
         $league = $this->league('Create Empty Core League');
         $priceCheck = $this->priceCheck($league);
 
-        $dto = $this->repository()->createCore($priceCheck->id, $this->exchangeType('Runes')->id, []);
+        $dto = $this->repository()->createCore($priceCheck->id, $this->exchangeType('Runes1')->id, []);
 
         $this->assertSame([], $dto->price_check_core_types);
         $this->assertDatabaseHas('price_check_cores', ['id' => $dto->id]);
@@ -116,16 +116,16 @@ class PriceCheckRepositoryTest extends FeatureTestCase
 
         $currency = $this->repository()->createCore(
             $priceCheck->id,
-            $this->exchangeType('Currency')->id,
+            $this->exchangeType('Currency1')->id,
             [],
         );
-        $runes = $this->repository()->createCore(
+        $Runes1 = $this->repository()->createCore(
             $priceCheck->id,
-            $this->exchangeType('Runes')->id,
+            $this->exchangeType('Runes1')->id,
             [],
         );
 
-        $this->assertNotSame($currency->id, $runes->id);
+        $this->assertNotSame($currency->id, $Runes1->id);
         $this->assertSame(2, PriceCheckCore::query()->where('price_check_id', $priceCheck->id)->count());
     }
 
@@ -133,11 +133,11 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Failing Core League');
         $priceCheck = $this->priceCheck($league);
-        $exchangeType = $this->exchangeType('Currency');
+        $exchangeType = $this->exchangeType('Currency1');
 
         try {
             $this->repository()->createCore($priceCheck->id, $exchangeType->id, [
-                ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos', 'name' => 'Chaos Orb'],
+                ['rate' => 1.0, 'exchange_item_trade_id' => 'chaos1', 'name' => 'chaos1 Orb'],
                 ['rate' => 1.0, 'name' => 'Missing trade id'],
             ]);
         } catch (\Throwable) {
@@ -151,26 +151,26 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Insert Prices League');
         $priceCheck = $this->priceCheck($league);
-        $core = $this->core($priceCheck, $this->exchangeType('Currency'));
+        $core = $this->core($priceCheck, $this->exchangeType('Currency1'));
 
-        $divine = $this->item($league, 'divine', 'Divine Orb');
-        $chaos = $this->item($league, 'chaos', 'Chaos Orb');
+        $divine111 = $this->item($league, 'divine111', 'divine111 Orb');
+        $chaos1 = $this->item($league, 'chaos1', 'chaos1 Orb');
 
         $this->repository()->insertPrices([
-            ['rate' => 1.0, 'price_check_core_id' => $core->id, 'exchange_item_id' => $divine->id],
-            ['rate' => 0.25, 'price_check_core_id' => $core->id, 'exchange_item_id' => $chaos->id],
+            ['rate' => 1.0, 'price_check_core_id' => $core->id, 'exchange_item_id' => $divine111->id],
+            ['rate' => 0.25, 'price_check_core_id' => $core->id, 'exchange_item_id' => $chaos1->id],
         ]);
 
         $this->assertSame(2, ExchangeItemPrice::query()->where('price_check_core_id', $core->id)->count());
         $this->assertDatabaseHas('exchange_item_prices', [
             'rate' => 1.0,
             'price_check_core_id' => $core->id,
-            'exchange_item_id' => $divine->id,
+            'exchange_item_id' => $divine111->id,
         ]);
         $this->assertDatabaseHas('exchange_item_prices', [
             'rate' => 0.25,
             'price_check_core_id' => $core->id,
-            'exchange_item_id' => $chaos->id,
+            'exchange_item_id' => $chaos1->id,
         ]);
     }
 
@@ -179,14 +179,14 @@ class PriceCheckRepositoryTest extends FeatureTestCase
         $league = $this->league('Insert Prices Two Cores League');
         $priceCheck = $this->priceCheck($league);
 
-        $currency = $this->core($priceCheck, $this->exchangeType('Currency'));
-        $runes = $this->core($priceCheck, $this->exchangeType('Runes'));
+        $currency = $this->core($priceCheck, $this->exchangeType('Currency1'));
+        $Runes1 = $this->core($priceCheck, $this->exchangeType('Runes1'));
 
-        $divine = $this->item($league, 'divine', 'Divine Orb');
+        $divine111 = $this->item($league, 'divine111', 'divine111 Orb');
 
         $this->repository()->insertPrices([
-            ['rate' => 10.0, 'price_check_core_id' => $currency->id, 'exchange_item_id' => $divine->id],
-            ['rate' => 12.0, 'price_check_core_id' => $runes->id, 'exchange_item_id' => $divine->id],
+            ['rate' => 10.0, 'price_check_core_id' => $currency->id, 'exchange_item_id' => $divine111->id],
+            ['rate' => 12.0, 'price_check_core_id' => $Runes1->id, 'exchange_item_id' => $divine111->id],
         ]);
 
         $this->assertSame(
@@ -195,7 +195,7 @@ class PriceCheckRepositoryTest extends FeatureTestCase
         );
         $this->assertSame(
             [12.0],
-            ExchangeItemPrice::query()->where('price_check_core_id', $runes->id)->pluck('rate')->all(),
+            ExchangeItemPrice::query()->where('price_check_core_id', $Runes1->id)->pluck('rate')->all(),
         );
     }
 
@@ -225,7 +225,7 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Delete Cores League');
         $priceCheck = $this->priceCheck($league);
-        $core = $this->core($priceCheck, $this->exchangeType('Currency'));
+        $core = $this->core($priceCheck, $this->exchangeType('Currency1'));
 
         $this->repository()->deleteMany([$priceCheck->id]);
 
@@ -236,12 +236,12 @@ class PriceCheckRepositoryTest extends FeatureTestCase
     {
         $league = $this->league('Delete Core Types League');
         $priceCheck = $this->priceCheck($league);
-        $core = $this->core($priceCheck, $this->exchangeType('Currency'));
+        $core = $this->core($priceCheck, $this->exchangeType('Currency1'));
 
         PriceCheckCoreType::query()->create([
             'rate' => 1.0,
-            'exchange_item_trade_id' => 'chaos',
-            'name' => 'Chaos Orb',
+            'exchange_item_trade_id' => 'chaos1',
+            'name' => 'chaos1 Orb',
             'price_check_core_id' => $core->id,
         ]);
 
