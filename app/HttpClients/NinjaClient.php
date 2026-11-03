@@ -27,13 +27,13 @@ final readonly class NinjaClient
      */
     public function getExchangeTypePrices(
         string $version,
-        string $league,
+        string $ninjaLeagueId,
         string $exchangeType,
     ): PoeNinjaExchangeResponse {
         /** @var Response $response */
         $response = $this->request()
             ->get($version.'/api/economy/exchange/current/overview', [
-                'league' => $league,
+                'league' => $ninjaLeagueId,
                 'type' => $exchangeType,
             ]);
 

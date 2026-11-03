@@ -29,19 +29,21 @@ class NinjaImportServiceTest extends FeatureTestCase
         $poe2Id = $this->versionId('poe2');
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
-            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard', 'id' => 'standard']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
+            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard1', 'id' => 'Standard1']]),
         ]);
 
         $this->service()->updateAllLeaguesFromNinja();
 
         $this->assertDatabaseHas('poe_leagues', [
-            'league_name' => 'Settlers',
+            'league_name' => 'Settlers1',
+            'ninja_league_id' => 'Settlers1',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('poe_leagues', [
-            'league_name' => 'Standard',
+            'league_name' => 'Standard1',
+            'ninja_league_id' => 'Standard1',
             'poe_version_id' => $poe2Id,
             'is_active' => true,
         ]);
@@ -71,7 +73,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         $league = $this->league('Old League', $poe1Id, true);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -79,7 +81,7 @@ class NinjaImportServiceTest extends FeatureTestCase
 
         $this->assertDatabaseHas('poe_leagues', ['id' => $league->id, 'is_active' => false]);
         $this->assertDatabaseHas('poe_leagues', [
-            'league_name' => 'Settlers',
+            'league_name' => 'Settlers1',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);
@@ -88,10 +90,10 @@ class NinjaImportServiceTest extends FeatureTestCase
     public function test_it_keeps_a_listed_league_active_without_duplicating_it(): void
     {
         $poe1Id = $this->versionId('poe1');
-        $league = $this->league('Settlers', $poe1Id, true);
+        $league = $this->league('Settlers1', $poe1Id, true);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -99,7 +101,7 @@ class NinjaImportServiceTest extends FeatureTestCase
 
         $this->assertSame(
             1,
-            PoeLeague::query()->where('league_name', 'Settlers')->where('poe_version_id', $poe1Id)->count(),
+            PoeLeague::query()->where('league_name', 'Settlers1')->where('poe_version_id', $poe1Id)->count(),
         );
         $this->assertDatabaseHas('poe_leagues', ['id' => $league->id, 'is_active' => true]);
     }
@@ -107,10 +109,10 @@ class NinjaImportServiceTest extends FeatureTestCase
     public function test_it_reactivates_a_league_that_ninja_lists_again(): void
     {
         $poe1Id = $this->versionId('poe1');
-        $league = $this->league('Settlers', $poe1Id, false);
+        $league = $this->league('Settlers1', $poe1Id, false);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -124,11 +126,11 @@ class NinjaImportServiceTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
         $poe2Id = $this->versionId('poe2');
 
-        $poe2League = $this->league('Standard', $poe2Id, true);
+        $poe2League = $this->league('Standard1', $poe2Id, true);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
-            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard', 'id' => 'standard']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
+            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard1', 'id' => 'Standard1']]),
         ]);
 
         $this->service()->updateAllLeaguesFromNinja();
@@ -145,11 +147,11 @@ class NinjaImportServiceTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
         $poe2Id = $this->versionId('poe2');
 
-        $poe1League = $this->league('Settlers', $poe1Id, true);
-        $poe2League = $this->league('Settlers', $poe2Id, true);
+        $poe1League = $this->league('Settlers1', $poe1Id, true);
+        $poe2League = $this->league('Settlers1', $poe2Id, true);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -166,14 +168,14 @@ class NinjaImportServiceTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
         $this->service()->updateAllLeaguesFromNinja();
 
         $league = PoeLeague::query()
-            ->where('league_name', 'Settlers')
+            ->where('league_name', 'Settlers1')
             ->where('poe_version_id', $poe1Id)
             ->firstOrFail();
 
@@ -188,7 +190,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         config(['poe.price_check.default_hours_check_rule' => 5]);
 
         $poe1Id = $this->versionId('poe1');
-        $league = $this->league('Settlers', $poe1Id, true);
+        $league = $this->league('Settlers1', $poe1Id, true);
 
         LeagueCheckRule::query()->create([
             'poe_league_id' => $league->id,
@@ -196,7 +198,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         ]);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -215,7 +217,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         $league = $this->league('Old League', $poe1Id, true);
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers1', 'id' => 'Settlers1']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -247,13 +249,13 @@ class NinjaImportServiceTest extends FeatureTestCase
 
         Http::fake([
             'poe.ninja/poe1/*' => fn () => throw new ConnectionException('Connection refused'),
-            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard', 'id' => 'standard']]),
+            'poe.ninja/poe2/*' => Http::response([['name' => 'Standard1', 'id' => 'Standard1']]),
         ]);
 
         $this->service()->updateAllLeaguesFromNinja();
 
         $this->assertDatabaseHas('poe_leagues', [
-            'league_name' => 'Standard',
+            'league_name' => 'Standard1',
             'poe_version_id' => $this->versionId('poe2'),
             'is_active' => true,
         ]);
@@ -266,7 +268,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         Log::spy();
 
         $poe1Id = $this->versionId('poe1');
-        $league = $this->league('Settlers', $poe1Id, true);
+        $league = $this->league('Settlers1', $poe1Id, true);
 
         Http::fake([
             'poe.ninja/poe1/*' => fn () => throw new ConnectionException('Connection refused'),
@@ -292,6 +294,7 @@ class NinjaImportServiceTest extends FeatureTestCase
     {
         return PoeLeague::query()->create([
             'league_name' => $name,
+            'ninja_league_id' => $name,
             'is_active' => $isActive,
             'poe_version_id' => $versionId,
         ]);

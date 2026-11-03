@@ -47,35 +47,36 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $this->repository()->find(PHP_INT_MAX);
     }
 
-    public function test_find_active_by_name_and_version_matches_all_three_conditions(): void
+    public function test_find_active_by_ninja_id_and_version_matches_all_three_conditions(): void
     {
         $versionId = $this->poeVersionId('poe2');
 
-        $poe1 = $this->league('Matched League', versionId: $this->poeVersionId('poe1'), isActive: true);
-        $active = $this->league('Matched League', versionId: $versionId, isActive: true);
+        $poe1 = $this->league('Matched League', ninjaId: 'matched-poe1', versionId: $this->poeVersionId('poe1'), isActive: true);
+        $active = $this->league('Matched League', ninjaId: 'matched-poe2', versionId: $versionId, isActive: true);
 
-        $dto = $this->repository()->findActiveByNameVersion('Matched League', $versionId);
+        $dto = $this->repository()->findActiveByNinjaIdVersion('matched-poe2', $versionId);
 
         $this->assertSame($active->id, $dto->id);
         $this->assertNotSame($poe1->id, $dto->id);
+        $this->assertSame('matched-poe2', $dto->ninja_league_id);
         $this->assertTrue($dto->is_active);
     }
 
-    public function test_find_active_by_name_and_version_throws_when_the_league_is_inactive(): void
+    public function test_find_active_by_ninja_id_and_version_throws_when_the_league_is_inactive(): void
     {
         $versionId = $this->poeVersionId('poe2');
-        $this->league('Inactive Only League', versionId: $versionId, isActive: false);
+        $this->league('Inactive Only League', ninjaId: 'inactive-only', versionId: $versionId, isActive: false);
 
         $this->expectException(ModelNotFoundException::class);
 
-        $this->repository()->findActiveByNameVersion('Inactive Only League', $versionId);
+        $this->repository()->findActiveByNinjaIdVersion('inactive-only', $versionId);
     }
 
-    public function test_find_active_by_name_and_version_throws_when_the_name_is_unknown(): void
+    public function test_find_active_by_ninja_id_and_version_throws_when_the_id_is_unknown(): void
     {
         $this->expectException(ModelNotFoundException::class);
 
-        $this->repository()->findActiveByNameVersion('Cant Find Me', $this->poeVersionId('poe2'));
+        $this->repository()->findActiveByNinjaIdVersion('cant-find-me', $this->poeVersionId('poe2'));
     }
 
     public function test_get_all_active_returns_only_active_leagues_of_the_version(): void
@@ -108,48 +109,59 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $poe2Id = $this->poeVersionId('poe2');
 
         $this->repository()->upsert([
-            ['league_name' => 'Upsert League One', 'poe_version_id' => $poe1Id, 'is_active' => true],
-            ['league_name' => 'Upsert League Two', 'poe_version_id' => $poe2Id, 'is_active' => false],
+            ['league_name' => 'Upsert League One', 'ninja_league_id' => 'upsert-one', 'poe_version_id' => $poe1Id, 'is_active' => true],
+            ['league_name' => 'Upsert League Two', 'ninja_league_id' => 'upsert-two', 'poe_version_id' => $poe2Id, 'is_active' => false],
         ]);
 
         $this->assertDatabaseHas('poe_leagues', [
             'league_name' => 'Upsert League One',
+            'ninja_league_id' => 'upsert-one',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('poe_leagues', [
             'league_name' => 'Upsert League Two',
+            'ninja_league_id' => 'upsert-two',
             'poe_version_id' => $poe2Id,
             'is_active' => false,
         ]);
     }
 
-    public function test_upsert_updates_is_active_of_an_existing_league(): void
+    public function test_upsert_updates_an_existing_league_matched_by_ninja_id(): void
     {
-        $league = $this->league('Upsert Existing League', isActive: true);
+        $league = $this->league('Upsert Existing League', ninjaId: 'upsert-existing', isActive: true);
 
         $this->repository()->upsert([
-            ['league_name' => 'Upsert Existing League', 'poe_version_id' => $league->poe_version_id, 'is_active' => false],
+            [
+                'league_name' => 'Upsert Existing League Renamed',
+                'ninja_league_id' => 'upsert-existing',
+                'poe_version_id' => $league->poe_version_id,
+                'is_active' => false,
+            ],
         ]);
 
         $this->assertSame(
             1,
             PoeLeague::query()
-                ->where('league_name', 'Upsert Existing League')
+                ->where('ninja_league_id', 'upsert-existing')
                 ->where('poe_version_id', $league->poe_version_id)
                 ->count(),
         );
-        $this->assertDatabaseHas('poe_leagues', ['id' => $league->id, 'is_active' => false]);
+        $this->assertDatabaseHas('poe_leagues', [
+            'id' => $league->id,
+            'league_name' => 'Upsert Existing League Renamed',
+            'is_active' => false,
+        ]);
     }
 
-    public function test_upsert_keeps_the_same_name_separate_for_each_version(): void
+    public function test_upsert_keeps_the_same_ninja_id_separate_for_each_version(): void
     {
         $this->repository()->upsert([
-            ['league_name' => 'Same Name League', 'poe_version_id' => $this->poeVersionId('poe1'), 'is_active' => true],
-            ['league_name' => 'Same Name League', 'poe_version_id' => $this->poeVersionId('poe2'), 'is_active' => true],
+            ['league_name' => 'Same Name League', 'ninja_league_id' => 'same-ninja', 'poe_version_id' => $this->poeVersionId('poe1'), 'is_active' => true],
+            ['league_name' => 'Same Name League', 'ninja_league_id' => 'same-ninja', 'poe_version_id' => $this->poeVersionId('poe2'), 'is_active' => true],
         ]);
 
-        $this->assertSame(2, PoeLeague::query()->where('league_name', 'Same Name League')->count());
+        $this->assertSame(2, PoeLeague::query()->where('ninja_league_id', 'same-ninja')->count());
     }
 
     public function test_upsert_default_rules_uses_the_given_interval(): void
@@ -290,10 +302,15 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         return (int) PoeVersion::query()->where('version', $version)->value('id');
     }
 
-    private function league(string $name, ?int $versionId = null, bool $isActive = true): PoeLeague
-    {
+    private function league(
+        string $name,
+        ?string $ninjaId = null,
+        ?int $versionId = null,
+        bool $isActive = true,
+    ): PoeLeague {
         return PoeLeague::query()->create([
             'league_name' => $name,
+            'ninja_league_id' => $ninjaId ?? 'ninja-'.strtolower(str_replace(' ', '-', $name)),
             'is_active' => $isActive,
             'poe_version_id' => $versionId ?? $this->poeVersionId('poe2'),
         ]);

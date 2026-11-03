@@ -37,11 +37,12 @@ interface PoeLeagueRepositoryContract
     /**
      * @throws ModelNotFoundException<Model> when the league does not exist
      */
-    public function findActiveByNameVersion(string $name, int $versionId): PoeLeagueDto;
+    public function findActiveByNinjaIdVersion(string $ninjaLeagueId, int $versionId): PoeLeagueDto;
 
     /**
      * @param  array<int, array{
      *     league_name: string,
+     *     ninja_league_id: string,
      *     poe_version_id: int,
      *     is_active: bool,
      * }>  $paramsWithValues

@@ -98,7 +98,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
     }
 
     #[\Override]
-    public function findActiveByNameVersion(string $name, int $versionId): PoeLeagueDto
+    public function findActiveByNinjaIdVersion(string $ninjaLeagueId, int $versionId): PoeLeagueDto
     {
         /** @var PoeLeagueDto $dto */
         $dto = $this->mapper->mapEloquentModel(
@@ -107,7 +107,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
                 ->with('check_rule')
                 ->where('is_active', true)
                 ->where('poe_version_id', $versionId)
-                ->where('league_name', $name)
+                ->where('ninja_league_id', $ninjaLeagueId)
                 ->firstOrFail(),
         );
 
@@ -117,6 +117,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
     /**
      * @param  array<int, array{
      *     league_name: string,
+     *     ninja_league_id: string,
      *     poe_version_id: int,
      *     is_active: bool,
      * }>  $paramsWithValues
@@ -126,8 +127,8 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
     {
         $this->model->newQuery()->upsert(
             $paramsWithValues,
-            ['league_name', 'poe_version_id'],
-            ['is_active'],
+            ['ninja_league_id', 'poe_version_id'],
+            ['league_name', 'is_active'],
         );
     }
 

@@ -79,17 +79,19 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         $leaguesToInsert = $ninjaLeagues->map(static function (PoeNinjaLeague $league) use ($poeVersion) {
             return [
                 'league_name' => $league->name,
+                'ninja_league_id' => $league->id,
                 'poe_version_id' => $poeVersion->id,
                 'is_active' => true,
             ];
         });
 
-        $ninjaNames = $leaguesToInsert->pluck('league_name');
+        $ninjaIds = $leaguesToInsert->pluck('ninja_league_id');
 
         return $currentLeagues
-            ->reject(static fn (PoeLeagueDto $league) => $ninjaNames->contains($league->league_name))
+            ->reject(static fn (PoeLeagueDto $league) => $ninjaIds->contains($league->ninja_league_id))
             ->map(static fn (PoeLeagueDto $league) => [
                 'league_name' => $league->league_name,
+                'ninja_league_id' => $league->ninja_league_id,
                 'poe_version_id' => $league->poe_version_id,
                 'is_active' => false,
             ])

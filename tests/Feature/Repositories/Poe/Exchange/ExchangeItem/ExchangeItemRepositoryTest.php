@@ -185,6 +185,7 @@ class ExchangeItemRepositoryTest extends FeatureTestCase
     {
         return PoeLeague::query()->create([
             'league_name' => $name,
+            'ninja_league_id' => 'ninja-'.strtolower(str_replace(' ', '-', $name)),
             'is_active' => true,
             'poe_version_id' => $this->poeVersionId('poe2'),
         ]);

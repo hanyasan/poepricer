@@ -32,6 +32,7 @@ class UpdateLeaguesFromNinjaCommandFeatureTest extends FeatureTestCase
 
         $this->assertDatabaseHas('poe_leagues', [
             'league_name' => 'Settlers',
+            'ninja_league_id' => 'settlers',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);

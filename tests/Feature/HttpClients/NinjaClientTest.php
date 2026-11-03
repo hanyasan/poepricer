@@ -35,11 +35,11 @@ class NinjaClientTest extends FeatureTestCase
     {
         Http::fake(['poe.ninja/*' => $this->exchangePayload()]);
 
-        $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
 
         Http::assertSent(function (Request $request): bool {
             return $request->method() === 'GET'
-                && $request->url() === 'https://poe.ninja/poe1/api/economy/exchange/current/overview?league=Settlers&type=Currency'
+                && $request->url() === 'https://poe.ninja/poe1/api/economy/exchange/current/overview?league=settlers&type=Currency'
                 && $request->hasHeader('Accept', 'application/json')
                 && $request->hasHeader('User-Agent', config('poe.ninja.user_agent'));
         });
@@ -49,7 +49,7 @@ class NinjaClientTest extends FeatureTestCase
     {
         Http::fake(['poe.ninja/*' => $this->exchangePayload()]);
 
-        $result = $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $result = $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
 
         $this->assertInstanceOf(PoeNinjaExchangeResponse::class, $result);
         $this->assertSame(['chaos' => 1.0, 'divine' => 0.0089], $result->core->rates);
@@ -81,7 +81,7 @@ class NinjaClientTest extends FeatureTestCase
             })
             ->andReturn(new PoeNinjaExchangeResponse(new PoeNinjaExchangeCore([], []), [], []));
 
-        $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
     }
 
     public function test_it_throws_a_mapping_error_when_the_exchange_payload_does_not_match_the_dto(): void
@@ -90,7 +90,7 @@ class NinjaClientTest extends FeatureTestCase
 
         $this->expectException(MappingErrorException::class);
 
-        $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
     }
 
     public function test_it_throws_an_invalid_source_error_when_the_exchange_body_is_not_json(): void
@@ -99,7 +99,7 @@ class NinjaClientTest extends FeatureTestCase
 
         $this->expectException(MapInvalidSourceException::class);
 
-        $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
     }
 
     public function test_it_throws_a_request_error_when_the_exchange_endpoint_fails(): void
@@ -108,7 +108,7 @@ class NinjaClientTest extends FeatureTestCase
 
         $this->expectException(RequestException::class);
 
-        $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+        $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
     }
 
     public function test_it_requests_leagues_for_the_given_version(): void
@@ -200,7 +200,7 @@ class NinjaClientTest extends FeatureTestCase
         $mapper->expects('mapFromJson')->never();
 
         try {
-            $this->client()->getExchangeTypePrices('poe1', 'Settlers', 'Currency');
+            $this->client()->getExchangeTypePrices('poe1', 'settlers', 'Currency');
         } catch (RequestException) {
             // ожидаемо
         }
