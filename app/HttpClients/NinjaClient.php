@@ -71,6 +71,7 @@ final readonly class NinjaClient
     {
         return Http::baseUrl((string) config('poe.ninja.base_url'))
             ->acceptJson()
-            ->withUserAgent((string) config('poe.ninja.user_agent'));
+            ->withUserAgent((string) config('poe.ninja.user_agent'))
+            ->timeout(config('poe.ninja.timeout'));
     }
 }

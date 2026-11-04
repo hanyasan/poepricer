@@ -14,6 +14,8 @@ use App\Services\DataServices\Poe\PoeVersionService;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
 use App\Services\NinjaImport\NinjaImportService;
 use App\Services\NinjaImport\NinjaImportServiceContract;
+use App\Services\NinjaImport\NinjaLeaguePricerService;
+use App\Services\NinjaImport\NinjaLeaguePricerServiceContract;
 use App\Utility\Mapper\MapperService;
 use App\Utility\Mapper\MapperServiceContract;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +30,7 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeTypeServiceContract::class => ExchangeTypeService::class,
         PoeVersionServiceContract::class => PoeVersionService::class,
         NinjaImportServiceContract::class => NinjaImportService::class,
+        NinjaLeaguePricerServiceContract::class => NinjaLeaguePricerService::class,
     ];
 
     /**
