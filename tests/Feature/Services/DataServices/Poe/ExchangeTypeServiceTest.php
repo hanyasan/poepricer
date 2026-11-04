@@ -18,21 +18,21 @@ class ExchangeTypeServiceTest extends FeatureTestCase
 
         $this->deleteExchangeTypes($poe1Id, $poe2Id);
 
-        $currency = $this->createExchangeType($poe1Id, 'Currency', 'Currency');
-        $this->createExchangeType($poe1Id, 'Essence', 'Essences');
-        $this->createExchangeType($poe2Id, 'Runes', 'Runes');
+        $typeAlpha = $this->createExchangeType($poe1Id, 'Type Alpha', 'Category Alpha');
+        $this->createExchangeType($poe1Id, 'Type Beta', 'Category Beta');
+        $this->createExchangeType($poe2Id, 'Type Gamma', 'Category Gamma');
 
         $result = $this->service()->getByVersion($poe1Id);
 
         $this->assertCount(2, $result);
         $this->assertContainsOnlyInstancesOf(ExchangeTypeDto::class, $result);
 
-        $currencyDto = $this->findByValue($result, 'Currency');
+        $typeAlphaDto = $this->findByValue($result, 'Type Alpha');
 
-        $this->assertSame($currency->id, $currencyDto->id);
-        $this->assertSame('Currency', $currencyDto->category);
-        $this->assertSame('Currency', $currencyDto->value);
-        $this->assertSame($poe1Id, $currencyDto->poe_version_id);
+        $this->assertSame($typeAlpha->id, $typeAlphaDto->id);
+        $this->assertSame('Category Alpha', $typeAlphaDto->category);
+        $this->assertSame('Type Alpha', $typeAlphaDto->value);
+        $this->assertSame($poe1Id, $typeAlphaDto->poe_version_id);
     }
 
     public function test_returns_empty_array_when_the_version_has_no_exchange_types(): void
@@ -51,17 +51,17 @@ class ExchangeTypeServiceTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
 
         $this->deleteExchangeTypes($poe1Id);
-        $this->createExchangeType($poe1Id, 'Currency', 'Currency');
+        $this->createExchangeType($poe1Id, 'Type Alpha', 'Category Alpha');
 
         $first = $this->service()->getByVersion($poe1Id);
 
-        $this->createExchangeType($poe1Id, 'Essence', 'Essences');
+        $this->createExchangeType($poe1Id, 'Type Beta', 'Category Beta');
 
         $second = $this->service()->getByVersion($poe1Id);
 
         $this->assertCount(1, $first);
         $this->assertCount(1, $second);
-        $this->assertSame('Currency', $second[0]->value);
+        $this->assertSame('Type Alpha', $second[0]->value);
     }
 
     public function test_returns_fresh_dtos_after_the_version_cache_tag_is_flushed(): void
@@ -69,11 +69,11 @@ class ExchangeTypeServiceTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
 
         $this->deleteExchangeTypes($poe1Id);
-        $this->createExchangeType($poe1Id, 'Currency', 'Currency');
+        $this->createExchangeType($poe1Id, 'Type Alpha', 'Category Alpha');
 
         $this->service()->getByVersion($poe1Id);
 
-        $this->createExchangeType($poe1Id, 'Essence', 'Essences');
+        $this->createExchangeType($poe1Id, 'Type Beta', 'Category Beta');
 
         Cache::tags(['poe_version'.$poe1Id])->flush();
 

@@ -9,6 +9,7 @@ use App\DataTransferObjects\ParsingObjects\PoeNinjaLeague;
 use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
 use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
+use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Enums\Tags\PoeLeagueTagEnum;
@@ -40,22 +41,47 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
 
     #[\Override]
     public function checkExchangePrices(
-        PoeLeagueDto $league,
-        PoeVersionDto $version,
+        ExtendedPoeLeagueDto $league,
     ): void {
-        $exchangeTypes = $this->exchangeTypeService->getByVersion($version->id);
+        $exchangeTypes = $this->exchangeTypeService->getByVersion($league->poe_version->id);
 
-        $priceCheck = $this->priceCheckRepository->createPriceCheck($league->id);
+        $imported = DB::transaction(function () use ($league, $exchangeTypes) {
+            $priceCheck = $this->priceCheckRepository->createPriceCheck($league->id);
+            $exchangeTypesImported = 0;
 
-        foreach ($exchangeTypes as $exchangeType) {
-            $this->importLeagueExchangePrices(
-                $league,
-                $priceCheck,
-                $version,
-                $exchangeType,
-            );
-        }
+            foreach ($exchangeTypes as $exchangeType) {
+                try {
+                    $this->importLeagueExchangePrices(
+                        $league,
+                        $priceCheck,
+                        $exchangeType,
+                    );
 
+                    $exchangeTypesImported += 1;
+                } catch (\Throwable $exception) {
+                    Log::error(
+                        'Failed for import type:' .
+                        $exchangeType->category .
+                        ' of league:' .
+                        $league->league_name .
+                        ' with message: ' .
+                        $exception->getMessage()
+                    );
+
+                    throw $exception;
+                }
+            }
+
+            return $exchangeTypesImported;
+        });
+
+        Log::info(
+            'Prices for league ' .
+            $league->league_name .
+            ' imported, for ' .
+            $imported .
+            ' types'
+        );
     }
 
     #[\Override]
@@ -150,13 +176,12 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
     }
 
     private function importLeagueExchangePrices(
-        PoeLeagueDto $league,
+        ExtendedPoeLeagueDto $league,
         PriceCheckDto $priceCheck,
-        PoeVersionDto $version,
         ExchangeTypeDto $exchangeType,
     ): void {
         $exchangeResponse = $this->ninjaClient->getExchangeTypePrices(
-            $version->version,
+            $league->poe_version->version,
             $league->ninja_league_id,
             $exchangeType->value,
         );

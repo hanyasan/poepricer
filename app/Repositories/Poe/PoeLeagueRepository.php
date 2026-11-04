@@ -2,21 +2,37 @@
 
 namespace App\Repositories\Poe;
 
+use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
-use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueWithLastCoreDto;
-use App\Models\Poe\Exchange\PriceCheckCore;
 use App\Models\Poe\LeagueCheckRule;
-use App\Models\Poe\PoeLeague as PoeLeagueModel;
+use App\Models\Poe\PoeLeague;
 use App\Utility\Mapper\MapperServiceContract;
-use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\Facades\DB;
 
 final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
 {
     public function __construct(
-        private PoeLeagueModel $model,
         private MapperServiceContract $mapper,
     ) {}
+
+    /**
+     * @return ExtendedPoeLeagueDto[]
+     */
+    #[\Override]
+    public function getWithLastPriceCheckAndRule(int $versionId): array
+    {
+        return $this->mapper->mapEloquentCollection(
+            ExtendedPoeLeagueDto::class,
+            PoeLeague::query()
+                ->with([
+                    'checkRule',
+                    'latestPriceCheck',
+                    'poeVersion',
+                ])
+                ->where('is_active', true)
+                ->where('poe_version_id', $versionId)
+                ->get(),
+        );
+    }
 
     /**
      * @param  array<int, int>  $leaguesId
@@ -42,30 +58,14 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
      * @return PoeLeagueDto[]
      */
     #[\Override]
-    public function getAllActiveWithRule(int $versionId): array
-    {
-        return $this->mapper->mapEloquentCollection(
-            PoeLeagueDto::class,
-            $this->model->newQuery()
-                ->with('check_rule')
-                ->where('is_active', true)
-                ->where('poe_version_id', $versionId)
-                ->get(),
-        );
-    }
-
-    /**
-     * @return PoeLeagueDto[]
-     */
-    #[\Override]
     public function getAllActiveWithNoRule(int $versionId): array
     {
         return $this->mapper->mapEloquentCollection(
             PoeLeagueDto::class,
-            $this->model->newQuery()
+            PoeLeague::query()
                 ->where('is_active', true)
                 ->where('poe_version_id', $versionId)
-                ->whereDoesntHave('check_rule')
+                ->whereDoesntHave('checkRule')
                 ->get(),
         );
     }
@@ -78,7 +78,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
     {
         return $this->mapper->mapEloquentCollection(
             PoeLeagueDto::class,
-            $this->model->newQuery()
+            PoeLeague::query()
                 ->where('is_active', true)
                 ->where('poe_version_id', $versionId)
                 ->get(),
@@ -91,24 +91,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
         /** @var PoeLeagueDto $dto */
         $dto = $this->mapper->mapEloquentModel(
             PoeLeagueDto::class,
-            $this->model->newQuery()->with('check_rule')->findOrFail($id),
-        );
-
-        return $dto;
-    }
-
-    #[\Override]
-    public function findActiveByNinjaIdVersion(string $ninjaLeagueId, int $versionId): PoeLeagueDto
-    {
-        /** @var PoeLeagueDto $dto */
-        $dto = $this->mapper->mapEloquentModel(
-            PoeLeagueDto::class,
-            $this->model->newQuery()
-                ->with('check_rule')
-                ->where('is_active', true)
-                ->where('poe_version_id', $versionId)
-                ->where('ninja_league_id', $ninjaLeagueId)
-                ->firstOrFail(),
+            PoeLeague::query()->with('checkRule')->findOrFail($id),
         );
 
         return $dto;
@@ -125,7 +108,7 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
     #[\Override]
     public function upsert(array $paramsWithValues): void
     {
-        $this->model->newQuery()->upsert(
+        PoeLeague::query()->upsert(
             $paramsWithValues,
             ['ninja_league_id', 'poe_version_id'],
             ['league_name', 'is_active'],

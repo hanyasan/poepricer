@@ -17,11 +17,11 @@ class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
     {
         $path = $this->writeExchangeTypesFile([
             'poe1' => [
-                ['value' => 'Currency', 'category' => 'Currency'],
-                ['value' => 'Essence', 'category' => 'Essences'],
+                ['value' => 'Type Alpha', 'category' => 'Category Alpha'],
+                ['value' => 'Type Beta', 'category' => 'Category Beta'],
             ],
             'poe2' => [
-                ['value' => 'Runes', 'category' => 'Runes'],
+                ['value' => 'Type Gamma', 'category' => 'Category Gamma'],
             ],
         ]);
 
@@ -31,19 +31,19 @@ class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
         $poe1Id = PoeVersion::query()->where('version', 'poe1')->value('id');
         $poe2Id = PoeVersion::query()->where('version', 'poe2')->value('id');
 
-        $this->assertSame(2, ExchangeType::query()->where('poe_version_id', $poe1Id)->whereIn('value', ['Currency', 'Essence'])->count());
-        $this->assertSame(1, ExchangeType::query()->where('poe_version_id', $poe2Id)->where('value', 'Runes')->count());
+        $this->assertSame(2, ExchangeType::query()->where('poe_version_id', $poe1Id)->whereIn('value', ['Type Alpha', 'Type Beta'])->count());
+        $this->assertSame(1, ExchangeType::query()->where('poe_version_id', $poe2Id)->where('value', 'Type Gamma')->count());
 
         $this->assertDatabaseHas('exchange_types', [
             'poe_version_id' => $poe1Id,
-            'value' => 'Currency',
-            'category' => 'Currency',
+            'value' => 'Type Alpha',
+            'category' => 'Category Alpha',
         ]);
 
         $this->assertDatabaseHas('exchange_types', [
             'poe_version_id' => $poe2Id,
-            'value' => 'Runes',
-            'category' => 'Runes',
+            'value' => 'Type Gamma',
+            'category' => 'Category Gamma',
         ]);
     }
 
@@ -51,7 +51,7 @@ class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
     {
         $path = $this->writeExchangeTypesFile([
             'poe1' => [
-                ['value' => 'Ducat', 'category' => 'Ducats'],
+                ['value' => 'Type Delta', 'category' => 'Category Delta'],
             ],
         ]);
 
@@ -60,18 +60,18 @@ class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
 
         $this->writeExchangeTypesFile([
             'poe1' => [
-                ['value' => 'Ducat', 'category' => 'Renamed Ducats'],
+                ['value' => 'Type Delta', 'category' => 'Category Delta Renamed'],
             ],
         ], $path);
 
         $this->artisan('poe:sync-exchange-types', ['--path' => $path])
             ->assertSuccessful();
 
-        $this->assertSame(1, ExchangeType::query()->where('value', 'Ducat')->count());
+        $this->assertSame(1, ExchangeType::query()->where('value', 'Type Delta')->count());
 
         $this->assertDatabaseHas('exchange_types', [
-            'value' => 'Ducat',
-            'category' => 'Renamed Ducats',
+            'value' => 'Type Delta',
+            'category' => 'Category Delta Renamed',
         ]);
     }
 
@@ -85,7 +85,7 @@ class SyncExchangeTypesCommandFeatureTest extends FeatureTestCase
     {
         $path = $this->writeExchangeTypesFile([
             'poe1' => [
-                ['value' => 'Currency', 'category' => 'Currency'],
+                ['value' => 'Type Alpha', 'category' => 'Category Alpha'],
             ],
             'unknown_version' => [
                 ['value' => 'Whatever', 'category' => 'Whatever'],

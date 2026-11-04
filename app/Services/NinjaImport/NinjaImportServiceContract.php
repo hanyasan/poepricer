@@ -2,14 +2,12 @@
 
 namespace App\Services\NinjaImport;
 
-use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
-use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
+use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 
 interface NinjaImportServiceContract
 {
     public function checkExchangePrices(
-        PoeLeagueDto $league,
-        PoeVersionDto $version,
+        ExtendedPoeLeagueDto $league,
     ): void;
 
     public function updateAllLeaguesFromNinja(): void;

@@ -2,15 +2,15 @@
 
 namespace Tests\Feature\Repositories\Poe;
 
+use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
-use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueWithLastCoreDto;
-use App\Models\Poe\Exchange\PriceCheckCore;
+use App\Models\Poe\Exchange\PriceCheck;
 use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
 use App\Models\Poe\PoeVersion;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\FeatureTestCase;
 
 class PoeLeagueRepositoryTest extends FeatureTestCase
@@ -28,55 +28,11 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $this->assertSame($league->poe_version_id, $dto->poe_version_id);
     }
 
-    public function test_find_includes_the_check_rule(): void
-    {
-        $league = $this->league('Find With Rule League');
-        $this->rule($league, 15);
-
-        $dto = $this->repository()->find($league->id);
-
-        $this->assertNotNull($dto->check_rule);
-        $this->assertSame(15, $dto->check_rule->minutes_check);
-        $this->assertSame($league->id, $dto->check_rule->poe_league_id);
-    }
-
     public function test_find_throws_when_the_league_does_not_exist(): void
     {
         $this->expectException(ModelNotFoundException::class);
 
         $this->repository()->find(PHP_INT_MAX);
-    }
-
-    public function test_find_active_by_ninja_id_and_version_matches_all_three_conditions(): void
-    {
-        $versionId = $this->poeVersionId('poe2');
-
-        $poe1 = $this->league('Matched League', ninjaId: 'matched-poe1', versionId: $this->poeVersionId('poe1'), isActive: true);
-        $active = $this->league('Matched League', ninjaId: 'matched-poe2', versionId: $versionId, isActive: true);
-
-        $dto = $this->repository()->findActiveByNinjaIdVersion('matched-poe2', $versionId);
-
-        $this->assertSame($active->id, $dto->id);
-        $this->assertNotSame($poe1->id, $dto->id);
-        $this->assertSame('matched-poe2', $dto->ninja_league_id);
-        $this->assertTrue($dto->is_active);
-    }
-
-    public function test_find_active_by_ninja_id_and_version_throws_when_the_league_is_inactive(): void
-    {
-        $versionId = $this->poeVersionId('poe2');
-        $this->league('Inactive Only League', ninjaId: 'inactive-only', versionId: $versionId, isActive: false);
-
-        $this->expectException(ModelNotFoundException::class);
-
-        $this->repository()->findActiveByNinjaIdVersion('inactive-only', $versionId);
-    }
-
-    public function test_find_active_by_ninja_id_and_version_throws_when_the_id_is_unknown(): void
-    {
-        $this->expectException(ModelNotFoundException::class);
-
-        $this->repository()->findActiveByNinjaIdVersion('cant-find-me', $this->poeVersionId('poe2'));
     }
 
     public function test_get_all_active_returns_only_active_leagues_of_the_version(): void
@@ -101,6 +57,150 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         PoeLeague::query()->update(['is_active' => false]);
 
         $this->assertSame([], $this->repository()->getAllActive($this->poeVersionId('poe2')));
+    }
+
+    public function test_get_all_active_with_no_rule_returns_leagues_without_a_rule(): void
+    {
+        $versionId = $this->versionRow();
+
+        $noRule = $this->league('No Rule League', versionId: $versionId);
+        $withRule = $this->league('With Rule League', versionId: $versionId);
+        $this->rule($withRule, 15);
+
+        $result = $this->repository()->getAllActiveWithNoRule($versionId);
+
+        $this->assertContainsOnlyInstancesOf(PoeLeagueDto::class, $result);
+        $this->assertSame([$noRule->id], array_column($result, 'id'));
+    }
+
+    public function test_get_all_active_with_no_rule_skips_inactive_and_other_version_leagues(): void
+    {
+        $versionId = $this->versionRow();
+
+        $this->league('Inactive No Rule League', versionId: $versionId, isActive: false);
+        $this->league('Other Version No Rule League', versionId: $this->versionRow());
+
+        $this->assertSame([], $this->repository()->getAllActiveWithNoRule($versionId));
+    }
+
+    public function test_get_all_active_with_no_rule_returns_an_empty_array_when_every_league_has_a_rule(): void
+    {
+        $versionId = $this->versionRow();
+        $this->rule($this->league('Ruled League', versionId: $versionId), 15);
+
+        $this->assertSame([], $this->repository()->getAllActiveWithNoRule($versionId));
+    }
+
+    public function test_get_with_last_price_check_and_rule_returns_only_active_leagues_of_the_version(): void
+    {
+        $versionId = $this->versionRow();
+
+        $active = $this->league('Extended Active League', versionId: $versionId, isActive: true);
+        $inactive = $this->league('Extended Inactive League', versionId: $versionId, isActive: false);
+        $otherVersion = $this->league('Extended Other Version League', versionId: $this->versionRow());
+
+        $result = $this->repository()->getWithLastPriceCheckAndRule($versionId);
+
+        $this->assertContainsOnlyInstancesOf(ExtendedPoeLeagueDto::class, $result);
+        $this->assertSame([$active->id], array_column($result, 'id'));
+        $this->assertNotContains($inactive->id, array_column($result, 'id'));
+        $this->assertNotContains($otherVersion->id, array_column($result, 'id'));
+    }
+
+    public function test_get_with_last_price_check_and_rule_maps_the_league_fields(): void
+    {
+        $versionId = $this->versionRow();
+        $league = $this->league('Extended Fields League', ninjaId: 'extended-fields', versionId: $versionId);
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertSame($league->id, $dto->id);
+        $this->assertSame('Extended Fields League', $dto->league_name);
+        $this->assertSame('extended-fields', $dto->ninja_league_id);
+        $this->assertTrue($dto->is_active);
+        $this->assertSame($versionId, $dto->poe_version_id);
+    }
+
+    public function test_get_with_last_price_check_and_rule_includes_the_check_rule(): void
+    {
+        $versionId = $this->versionRow();
+        $league = $this->league('Extended Rule League', versionId: $versionId);
+        $this->rule($league, 15);
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertNotNull($dto->check_rule);
+        $this->assertSame(15, $dto->check_rule->minutes_check);
+        $this->assertSame($league->id, $dto->check_rule->poe_league_id);
+    }
+
+    public function test_get_with_last_price_check_and_rule_leaves_the_rule_null_when_the_league_has_none(): void
+    {
+        $versionId = $this->versionRow();
+        $this->league('Extended No Rule League', versionId: $versionId);
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertNull($dto->check_rule);
+    }
+
+    public function test_get_with_last_price_check_and_rule_includes_the_league_version(): void
+    {
+        $versionId = $this->versionRow();
+        $this->league('Extended Version League', versionId: $versionId);
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertSame($versionId, $dto->poe_version->id);
+        $this->assertSame('poe2', $dto->poe_version->version);
+    }
+
+    public function test_get_with_last_price_check_and_rule_includes_only_the_latest_price_check(): void
+    {
+        $versionId = $this->versionRow();
+        $league = $this->league('Extended Latest League', versionId: $versionId);
+
+        $older = $this->priceCheck($league, '2026-01-01 00:00:00');
+        $newer = $this->priceCheck($league, '2026-02-01 00:00:00');
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertCount(1, $dto->latest_price_check);
+        $this->assertSame($newer->id, $dto->latest_price_check[0]->id);
+        $this->assertNotSame($older->id, $dto->latest_price_check[0]->id);
+        $this->assertSame($league->id, $dto->latest_price_check[0]->poe_league_id);
+    }
+
+    public function test_get_with_last_price_check_and_rule_keeps_the_latest_price_check_per_league(): void
+    {
+        $versionId = $this->versionRow();
+        $first = $this->league('Extended First League', versionId: $versionId);
+        $second = $this->league('Extended Second League', versionId: $versionId);
+
+        $firstCheck = $this->priceCheck($first, '2026-03-01 00:00:00');
+        $secondCheck = $this->priceCheck($second, '2026-04-01 00:00:00');
+
+        $result = $this->repository()->getWithLastPriceCheckAndRule($versionId);
+
+        $this->assertSame($firstCheck->id, $this->findById($result, $first->id)->latest_price_check[0]->id);
+        $this->assertSame($secondCheck->id, $this->findById($result, $second->id)->latest_price_check[0]->id);
+    }
+
+    public function test_get_with_last_price_check_and_rule_returns_an_empty_list_when_the_league_has_no_price_check(): void
+    {
+        $versionId = $this->versionRow();
+        $this->league('Extended No Check League', versionId: $versionId);
+
+        $dto = $this->onlyResult($this->repository()->getWithLastPriceCheckAndRule($versionId));
+
+        $this->assertSame([], $dto->latest_price_check);
+    }
+
+    public function test_get_with_last_price_check_and_rule_returns_an_empty_array_when_no_league_is_active(): void
+    {
+        $versionId = $this->versionRow();
+
+        $this->assertSame([], $this->repository()->getWithLastPriceCheckAndRule($versionId));
     }
 
     public function test_upsert_inserts_new_leagues(): void
@@ -226,6 +326,20 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         return (int) PoeVersion::query()->where('version', $version)->value('id');
     }
 
+    /**
+     * Each test that asserts the full result set owns its own version row, so the shared
+     * test database cannot add leagues or exchange data the test did not create. The
+     * version string stays a real one where the value itself is asserted.
+     */
+    private function versionRow(string $version = 'poe2'): int
+    {
+        $id = (int) DB::table('poe_versions')->max('id') + 1;
+
+        DB::table('poe_versions')->insert(['id' => $id, 'version' => $version]);
+
+        return $id;
+    }
+
     private function league(
         string $name,
         ?string $ninjaId = null,
@@ -248,18 +362,28 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         ]);
     }
 
-    private function core(PoeLeague $league, string $createdAt): PriceCheckCore
+    private function priceCheck(PoeLeague $league, string $createdAt): PriceCheck
     {
-        return PriceCheckCore::query()->create([
+        return PriceCheck::query()->create([
             'poe_league_id' => $league->id,
             'created_at' => $createdAt,
         ]);
     }
 
     /**
-     * @param  PoeLeagueWithLastCoreDto[]  $dtos
+     * @param  ExtendedPoeLeagueDto[]  $dtos
      */
-    private function findById(array $dtos, int $id): PoeLeagueWithLastCoreDto
+    private function onlyResult(array $dtos): ExtendedPoeLeagueDto
+    {
+        $this->assertCount(1, $dtos);
+
+        return $dtos[0];
+    }
+
+    /**
+     * @param  ExtendedPoeLeagueDto[]  $dtos
+     */
+    private function findById(array $dtos, int $id): ExtendedPoeLeagueDto
     {
         foreach ($dtos as $dto) {
             if ($dto->id === $id) {

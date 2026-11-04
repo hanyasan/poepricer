@@ -2,9 +2,11 @@
 
 namespace App\Models\Poe;
 
+use App\Models\Poe\Exchange\PriceCheck;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -26,7 +28,7 @@ final class PoeLeague extends Model
 
     public $timestamps = false;
 
-    public function check_rule(): HasOne
+    public function checkRule(): HasOne
     {
         return $this->hasOne(LeagueCheckRule::class, 'poe_league_id');
     }
@@ -34,5 +36,15 @@ final class PoeLeague extends Model
     public function poeVersion(): BelongsTo
     {
         return $this->belongsTo(PoeVersion::class, 'poe_version_id');
+    }
+
+    public function priceChecks(): HasMany
+    {
+        return $this->hasMany(PriceCheck::class, 'poe_league_id');
+    }
+
+    public function latestPriceCheck(): HasMany
+    {
+        return $this->priceChecks()->latest()->limit(1);
     }
 }

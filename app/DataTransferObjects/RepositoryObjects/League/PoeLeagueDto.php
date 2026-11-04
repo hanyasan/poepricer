@@ -10,6 +10,5 @@ final readonly class PoeLeagueDto
         public string $ninja_league_id,
         public bool $is_active,
         public int $poe_version_id,
-        public ?LeagueCheckRuleDto $check_rule = null,
     ) {}
 }

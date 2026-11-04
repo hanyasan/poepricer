@@ -21,7 +21,7 @@ class UpdateLeaguesFromNinjaCommandFeatureTest extends FeatureTestCase
         $poe1Id = $this->versionId('poe1');
 
         Http::fake([
-            'poe.ninja/poe1/*' => Http::response([['name' => 'Settlers', 'id' => 'settlers']]),
+            'poe.ninja/poe1/*' => Http::response([['name' => 'League One', 'id' => 'league-one']]),
             'poe.ninja/poe2/*' => Http::response([]),
         ]);
 
@@ -31,8 +31,8 @@ class UpdateLeaguesFromNinjaCommandFeatureTest extends FeatureTestCase
             ->assertSuccessful();
 
         $this->assertDatabaseHas('poe_leagues', [
-            'league_name' => 'Settlers',
-            'ninja_league_id' => 'settlers',
+            'league_name' => 'League One',
+            'ninja_league_id' => 'league-one',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);

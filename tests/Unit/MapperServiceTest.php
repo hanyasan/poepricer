@@ -29,25 +29,25 @@ class MapperServiceTest extends TestCase
         $json = json_encode([
             'core' => [
                 'items' => [
-                    ['id' => 'chaos', 'name' => 'Chaos Orb', 'category' => 'Currency'],
+                    ['id' => 'item-a', 'name' => 'Item A', 'category' => 'type-alpha'],
                 ],
-                'rates' => ['chaos' => 1.0, 'divine' => 0.0089],
+                'rates' => ['item-a' => 1.0, 'item-b' => 0.0089],
             ],
             'lines' => [
                 ['id' => 'line-1', 'primaryValue' => 12.5],
                 ['id' => 'line-2'],
             ],
             'items' => [
-                ['id' => 'item-1', 'name' => 'Divine Orb', 'category' => 'Currency'],
+                ['id' => 'item-b', 'name' => 'Item B', 'category' => 'type-alpha'],
             ],
         ], JSON_THROW_ON_ERROR);
 
         $result = $this->mapper->mapFromJson(PoeNinjaExchangeResponse::class, $json);
 
         $this->assertInstanceOf(PoeNinjaExchangeResponse::class, $result);
-        $this->assertSame(['chaos' => 1.0, 'divine' => 0.0089], $result->core->rates);
+        $this->assertSame(['item-a' => 1.0, 'item-b' => 0.0089], $result->core->rates);
         $this->assertInstanceOf(PoeNinjaExchangeItem::class, $result->core->items[0]);
-        $this->assertSame('Chaos Orb', $result->core->items[0]->name);
+        $this->assertSame('Item A', $result->core->items[0]->name);
 
         $this->assertCount(2, $result->lines);
         $this->assertInstanceOf(PoeNinjaExchangeLine::class, $result->lines[0]);
@@ -58,16 +58,16 @@ class MapperServiceTest extends TestCase
     public function test_it_ignores_superfluous_keys_in_the_source(): void
     {
         $json = json_encode([
-            'name' => 'Settlers',
-            'id' => 'settlers',
+            'name' => 'League One',
+            'id' => 'league-a',
             'unknown_field' => ['deeply' => 'nested'],
         ], JSON_THROW_ON_ERROR);
 
         $result = $this->mapper->mapFromJson(PoeNinjaLeague::class, $json);
 
         $this->assertInstanceOf(PoeNinjaLeague::class, $result);
-        $this->assertSame('Settlers', $result->name);
-        $this->assertSame('settlers', $result->id);
+        $this->assertSame('League One', $result->name);
+        $this->assertSame('league-a', $result->id);
     }
 
     /**
@@ -87,9 +87,9 @@ class MapperServiceTest extends TestCase
     public static function invalidPayloads(): array
     {
         return [
-            'missing required key' => [['name' => 'Settlers']],
-            'value of the wrong type' => [['name' => 'Settlers', 'id' => 42]],
-            'not an object at all' => [['Settlers', 'settlers']],
+            'missing required key' => [['name' => 'League One']],
+            'value of the wrong type' => [['name' => 'League One', 'id' => 42]],
+            'not an object at all' => [['League One', 'league-a']],
         ];
     }
 
@@ -107,7 +107,7 @@ class MapperServiceTest extends TestCase
     public static function invalidJsonSources(): array
     {
         return [
-            'malformed json' => ['{"name": "Settlers", '],
+            'malformed json' => ['{"name": "League One", '],
             'empty string' => [''],
             'null document' => ['null'],
         ];
@@ -116,16 +116,16 @@ class MapperServiceTest extends TestCase
     public function test_it_maps_a_json_list_into_an_array_of_dtos(): void
     {
         $json = json_encode([
-            ['name' => 'Settlers', 'id' => 'settlers'],
-            ['name' => 'Standard', 'id' => 'standard'],
+            ['name' => 'League One', 'id' => 'league-a'],
+            ['name' => 'League Two', 'id' => 'league-two'],
         ], JSON_THROW_ON_ERROR);
 
         $result = $this->mapper->mapArrayFromJson(PoeNinjaLeague::class, $json);
 
         $this->assertCount(2, $result);
         $this->assertContainsOnlyInstancesOf(PoeNinjaLeague::class, $result);
-        $this->assertSame('settlers', $result[0]->id);
-        $this->assertSame('standard', $result[1]->id);
+        $this->assertSame('league-a', $result[0]->id);
+        $this->assertSame('league-two', $result[1]->id);
     }
 
     public function test_it_returns_an_empty_array_for_an_empty_json_list(): void
@@ -136,8 +136,8 @@ class MapperServiceTest extends TestCase
     public function test_it_throws_a_mapping_error_when_one_element_of_the_list_is_invalid(): void
     {
         $json = json_encode([
-            ['name' => 'Settlers', 'id' => 'settlers'],
-            ['name' => 'Standard'],
+            ['name' => 'League One', 'id' => 'league-a'],
+            ['name' => 'League Two'],
         ], JSON_THROW_ON_ERROR);
 
         $this->expectException(MappingErrorException::class);
@@ -155,16 +155,16 @@ class MapperServiceTest extends TestCase
     public function test_it_maps_an_eloquent_collection_into_an_array_of_dtos(): void
     {
         $collection = new Collection([
-            ['name' => 'Settlers', 'id' => 'settlers', 'extra' => true],
-            ['name' => 'Standard', 'id' => 'standard', 'extra' => false],
+            ['name' => 'League One', 'id' => 'league-a', 'extra' => true],
+            ['name' => 'League Two', 'id' => 'league-two', 'extra' => false],
         ]);
 
         $result = $this->mapper->mapEloquentCollection(PoeNinjaLeague::class, $collection);
 
         $this->assertCount(2, $result);
         $this->assertContainsOnlyInstancesOf(PoeNinjaLeague::class, $result);
-        $this->assertSame('Settlers', $result[0]->name);
-        $this->assertSame('standard', $result[1]->id);
+        $this->assertSame('League One', $result[0]->name);
+        $this->assertSame('league-two', $result[1]->id);
     }
 
     public function test_it_returns_an_empty_array_for_an_empty_eloquent_collection(): void
@@ -178,8 +178,8 @@ class MapperServiceTest extends TestCase
     public function test_it_throws_a_mapping_error_when_an_eloquent_row_is_invalid(): void
     {
         $collection = new Collection([
-            ['name' => 'Settlers', 'id' => 'settlers'],
-            ['id' => 'standard'],
+            ['name' => 'League One', 'id' => 'league-a'],
+            ['id' => 'league-two'],
         ]);
 
         $this->expectException(MappingErrorException::class);

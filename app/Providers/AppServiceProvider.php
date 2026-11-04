@@ -4,12 +4,8 @@ namespace App\Providers;
 
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepository;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
-use App\Repositories\Poe\Exchange\ExchangeItemPrice\ExchangeItemPriceRepository;
-use App\Repositories\Poe\Exchange\ExchangeItemPrice\ExchangeItemPriceRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepository;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
-use App\Repositories\Poe\Exchange\PriceCheckCore\PriceCheckCoreRepository;
-use App\Repositories\Poe\Exchange\PriceCheckCore\PriceCheckCoreRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepository;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
 use App\Services\DataServices\Poe\ExchangeTypeService;

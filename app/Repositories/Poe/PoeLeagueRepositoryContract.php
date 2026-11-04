@@ -2,17 +2,17 @@
 
 namespace App\Repositories\Poe;
 
+use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
-use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueWithLastCoreDto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface PoeLeagueRepositoryContract
 {
     /**
-     * @return PoeLeagueDto[]
+     * @return ExtendedPoeLeagueDto[]
      */
-    public function getAllActiveWithRule(int $versionId): array;
+    public function getWithLastPriceCheckAndRule(int $versionId): array;
 
     /**
      * @return PoeLeagueDto[]
@@ -33,11 +33,6 @@ interface PoeLeagueRepositoryContract
      * @throws ModelNotFoundException<Model> when the league does not exist
      */
     public function find(int $id): PoeLeagueDto;
-
-    /**
-     * @throws ModelNotFoundException<Model> when the league does not exist
-     */
-    public function findActiveByNinjaIdVersion(string $ninjaLeagueId, int $versionId): PoeLeagueDto;
 
     /**
      * @param  array<int, array{
