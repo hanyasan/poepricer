@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\Compact\BaseExchangeCompactJob;
 use App\Jobs\FetchPoeOnePricesJob;
 use App\Jobs\FetchPoeTwoPricesJob;
 use App\Jobs\SyncPoeLeaguesJob;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->job(SyncPoeLeaguesJob::class)->dailyAt('23:00');
         $schedule->job(FetchPoeOnePricesJob::class)->everyTenMinutes();
         $schedule->job(FetchPoeTwoPricesJob::class)->everyThirtyMinutes();
+        $schedule->job(BaseExchangeCompactJob::class)->sundays()->thursdays();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

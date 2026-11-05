@@ -2,12 +2,16 @@
 
 namespace App\Providers;
 
+use App\Repositories\Poe\Exchange\Compact\ExchangeCompactRepository;
+use App\Repositories\Poe\Exchange\Compact\ExchangeCompactRepositoryContract;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepository;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepository;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepository;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
+use App\Services\DataServices\Compact\ExchangeCompactService;
+use App\Services\DataServices\Compact\ExchangeCompactServiceContract;
 use App\Services\DataServices\Poe\ExchangeTypeService;
 use App\Services\DataServices\Poe\ExchangeTypeServiceContract;
 use App\Services\DataServices\Poe\PoeVersionService;
@@ -31,6 +35,8 @@ final class AppServiceProvider extends ServiceProvider
         PoeVersionServiceContract::class => PoeVersionService::class,
         NinjaImportServiceContract::class => NinjaImportService::class,
         NinjaLeaguePricerServiceContract::class => NinjaLeaguePricerService::class,
+        ExchangeCompactRepositoryContract::class => ExchangeCompactRepository::class,
+        ExchangeCompactServiceContract::class => ExchangeCompactService::class,
     ];
 
     /**
