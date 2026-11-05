@@ -2,9 +2,13 @@
 .env
 .env.*
 !.env.docker.example
+!.env.production.example
 .idea
 .vscode
 vendor
+# Cached package manifest lists dev-only providers (laravel/boost, pail, ...),
+# which are absent from a --no-dev install and break `package:discover`.
+bootstrap/cache/*.php
 storage/logs
 storage/framework/cache
 storage/framework/sessions

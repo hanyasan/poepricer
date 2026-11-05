@@ -1,0 +1,119 @@
+name: poepricer-prod
+
+# Production stack: nginx in front of php-fpm, Horizon for queues and the
+# scheduler. There is no `test` container.
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+
+x-app: &app
+  build:
+    context: .
+    target: production
+    args:
+      PHP_VARIANT: fpm
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  image: poepricer-app:production
+  env_file:
+    - .env.production
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  # php-fpm only: it listens on 9000 inside the compose network and is not
+  # published. The entrypoint migrates the database before starting it, so a
+  # healthy `app` also means the schema is up to date.
+  app:
+    <<: *app
+    command: ["php-fpm"]
+    stop_signal: SIGQUIT
+    healthcheck:
+      test: ["CMD-SHELL", "SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  nginx:
+    build:
+      context: .
+      target: nginx
+      args:
+        PHP_VARIANT: fpm
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    image: poepricer-nginx:production
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Horizon manages the worker pool itself: the supervisors in config/horizon.php
+  # decide how many processes run per queue, so this container is a single
+  # master instead of one process per replica.
+  queue:
+    <<: *app
+    command: ["php", "artisan", "horizon"]
+    environment:
+      RUN_MIGRATIONS: "false"
+    stop_grace_period: 90s
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      app:
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  redisdata:

@@ -20,7 +20,7 @@ final class BaseExchangeCompactJob implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping())->releaseAfter(300)];
+        return [(new WithoutOverlapping)->releaseAfter(300)->expireAfter(600)];
     }
 
     /**

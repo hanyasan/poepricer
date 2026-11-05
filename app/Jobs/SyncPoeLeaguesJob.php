@@ -20,7 +20,7 @@ final class SyncPoeLeaguesJob implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping())->releaseAfter(10)];
+        return [(new WithoutOverlapping)->releaseAfter(10)->expireAfter(600)];
     }
 
     /**
