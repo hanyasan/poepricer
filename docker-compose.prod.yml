@@ -92,6 +92,10 @@ services:
     env_file:
       - .env.production
     restart: unless-stopped
+    # Bound to the host loopback only, so the database is reachable through an
+    # SSH tunnel (ssh -L 5432:127.0.0.1:5432 user@server) but not from outside.
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
