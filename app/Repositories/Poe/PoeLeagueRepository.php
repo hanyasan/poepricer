@@ -4,6 +4,7 @@ namespace App\Repositories\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
+use App\Models\Poe\Exchange\Metrics\ExchangeMetricsItem;
 use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
 use App\Utility\Mapper\MapperServiceContract;
@@ -83,6 +84,19 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
                 ->where('poe_version_id', $versionId)
                 ->get(),
         );
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    #[\Override]
+    public function getActiveIdsWithMetricsItems(): array
+    {
+        return PoeLeague::query()
+            ->where('is_active', true)
+            ->whereIn('id', ExchangeMetricsItem::query()->select('poe_league_id'))
+            ->pluck('id')
+            ->all();
     }
 
     #[\Override]

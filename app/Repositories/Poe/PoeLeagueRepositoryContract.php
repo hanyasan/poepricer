@@ -25,6 +25,11 @@ interface PoeLeagueRepositoryContract
     public function getAllActive(int $versionId): array;
 
     /**
+     * @return array<int, int>
+     */
+    public function getActiveIdsWithMetricsItems(): array;
+
+    /**
      * @param  array<int, int>  $leaguesId
      */
     public function upsertDefaultRulesForLeagues(array $leaguesId, int $minutesCheck): void;

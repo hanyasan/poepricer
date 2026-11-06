@@ -4,6 +4,8 @@ namespace Tests\Feature\Repositories\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
+use App\Models\Poe\Exchange\ExchangeItem;
+use App\Models\Poe\Exchange\Metrics\ExchangeMetricsItem;
 use App\Models\Poe\Exchange\PriceCheck;
 use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
@@ -50,6 +52,28 @@ class PoeLeagueRepositoryTest extends FeatureTestCase
         $this->assertNotContains($inactive->id, array_column($result, 'id'));
         $this->assertNotContains($otherVersion->id, array_column($result, 'id'));
         $this->assertEmpty(array_filter($result, static fn (PoeLeagueDto $dto): bool => ! $dto->is_active));
+    }
+
+    public function test_get_active_ids_with_metrics_items_returns_only_active_leagues_that_have_metrics_items(): void
+    {
+        $withItems = $this->league('Metrics League');
+        $withoutItems = $this->league('No Metrics League');
+        $inactiveWithItems = $this->league('Inactive Metrics League', isActive: false);
+
+        foreach ([$withItems, $inactiveWithItems] as $league) {
+            $item = ExchangeItem::query()->create([
+                'name' => 'DIVINE',
+                'trade_id' => 'divine',
+                'poe_league_id' => $league->id,
+            ]);
+            ExchangeMetricsItem::factory()->forLeagueCurrency($league, $item)->create();
+        }
+
+        $result = $this->repository()->getActiveIdsWithMetricsItems();
+
+        $this->assertContains($withItems->id, $result);
+        $this->assertNotContains($withoutItems->id, $result);
+        $this->assertNotContains($inactiveWithItems->id, $result);
     }
 
     public function test_get_all_active_is_empty_when_no_league_is_active(): void
