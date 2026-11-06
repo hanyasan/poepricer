@@ -465,6 +465,51 @@ class NinjaImportServiceTest extends FeatureTestCase
         ]);
     }
 
+    public function test_it_persists_the_traded_volume_of_a_price(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['item-b' => 210.5],
+            items: [['id' => 'item-b', 'name' => 'Item B', 'category' => 'type-alpha']],
+            volumes: ['item-b' => 37.25],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertSame(
+            [37.25],
+            ExchangeItemPrice::query()
+                ->where('price_check_core_id', $this->coreIdOf($league))
+                ->pluck('volume')
+                ->all(),
+        );
+    }
+
+    public function test_it_persists_a_price_without_volume_as_null(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['item-b' => 210.5],
+            items: [['id' => 'item-b', 'name' => 'Item B', 'category' => 'type-alpha']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertSame(
+            [null],
+            ExchangeItemPrice::query()
+                ->where('price_check_core_id', $this->coreIdOf($league))
+                ->pluck('volume')
+                ->all(),
+        );
+    }
+
     public function test_it_skips_items_without_a_matching_line(): void
     {
         $version = $this->versionRow('poe2');
@@ -554,6 +599,7 @@ class NinjaImportServiceTest extends FeatureTestCase
      * @param  array<string, float>  $rates
      * @param  array<string, float|null>  $lines
      * @param  list<array{id: string, name: string, category: string}>  $items
+     * @param  array<string, float>  $volumes
      * @return array<string, mixed>
      */
     private function exchangePayload(
@@ -561,6 +607,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         array $rates = [],
         array $lines = [],
         array $items = [],
+        array $volumes = [],
     ): array {
         return [
             'core' => [
@@ -571,6 +618,7 @@ class NinjaImportServiceTest extends FeatureTestCase
                 static fn (string $id, ?float $primaryValue): array => [
                     'id' => $id,
                     'primaryValue' => $primaryValue,
+                    'volumePrimaryValue' => $volumes[$id] ?? null,
                 ],
                 array_keys($lines),
                 $lines,

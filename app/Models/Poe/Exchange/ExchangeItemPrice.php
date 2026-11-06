@@ -8,10 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property-read int $id
  * @property float $rate
- *
+ * @property float|null $volume
  * @property-read int $exchange_item_id
  * @property-read ExchangeItem $exchangeItem
- *
  * @property-read int $price_check_core_id
  * @property-read PriceCheckCore $priceCheckCore
  */

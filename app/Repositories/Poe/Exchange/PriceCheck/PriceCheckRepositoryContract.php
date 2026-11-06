@@ -27,6 +27,7 @@ interface PriceCheckRepositoryContract
     /**
      * @param  array<int, array{
      *     rate: float,
+     *     volume?: float|null,
      *     price_check_core_id: int,
      *     exchange_item_id: int,
      * }>  $pricesData

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $league_name
  * @property string $ninja_league_id
  * @property bool $is_active
+ * @property Carbon|null $started_at
  * @property-read int $poe_version_id
  * @property-read PoeVersion $poeVersion
  */
@@ -27,6 +28,14 @@ final class PoeLeague extends Model
     protected $guarded = ['id'];
 
     public $timestamps = false;
+
+    #[\Override]
+    protected function casts(): array
+    {
+        return [
+            'started_at' => 'datetime',
+        ];
+    }
 
     public function checkRule(): HasOne
     {

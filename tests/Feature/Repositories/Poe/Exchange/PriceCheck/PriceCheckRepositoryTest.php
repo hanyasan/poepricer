@@ -174,6 +174,26 @@ class PriceCheckRepositoryTest extends FeatureTestCase
         ]);
     }
 
+    public function test_insert_prices_persists_the_volume_and_defaults_it_to_null(): void
+    {
+        $league = $this->league('Insert Prices Volume League');
+        $core = $this->core($this->priceCheck($league), $this->exchangeType('type-alpha'));
+
+        $itemB = $this->item($league, 'item-b', 'Item B');
+        $itemC = $this->item($league, 'item-c', 'Item C');
+
+        $this->repository()->insertPrices([
+            ['rate' => 1.0, 'volume' => 12.5, 'price_check_core_id' => $core->id, 'exchange_item_id' => $itemB->id],
+            ['rate' => 2.0, 'price_check_core_id' => $core->id, 'exchange_item_id' => $itemC->id],
+        ]);
+
+        $this->assertSame(
+            12.5,
+            ExchangeItemPrice::query()->where('exchange_item_id', $itemB->id)->value('volume'),
+        );
+        $this->assertNull(ExchangeItemPrice::query()->where('exchange_item_id', $itemC->id)->value('volume'));
+    }
+
     public function test_insert_prices_keeps_cores_apart(): void
     {
         $league = $this->league('Insert Prices Two Cores League');

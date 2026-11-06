@@ -77,6 +77,7 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
     /**
      * @param  array<int, array{
      *     rate: float,
+     *     volume?: float|null,
      *     price_check_core_id: int,
      *     exchange_item_id: int,
      * }>  $pricesData
@@ -88,6 +89,7 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
             ->insert(array_map(static function (array $priceData) {
                 return [
                     'rate' => $priceData['rate'],
+                    'volume' => $priceData['volume'] ?? null,
                     'exchange_item_id' => $priceData['exchange_item_id'],
                     'price_check_core_id' => $priceData['price_check_core_id'],
                 ];

@@ -60,11 +60,11 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
                     $exchangeTypesImported += 1;
                 } catch (\Throwable $exception) {
                     Log::error(
-                        'Failed for import type:' .
-                        $exchangeType->category .
-                        ' of league:' .
-                        $league->league_name .
-                        ' with message: ' .
+                        'Failed for import type:'.
+                        $exchangeType->category.
+                        ' of league:'.
+                        $league->league_name.
+                        ' with message: '.
                         $exception->getMessage()
                     );
 
@@ -76,10 +76,10 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         });
 
         Log::info(
-            'Prices for league ' .
-            $league->league_name .
-            ' imported, for ' .
-            $imported .
+            'Prices for league '.
+            $league->league_name.
+            ' imported, for '.
+            $imported.
             ' types'
         );
     }
@@ -215,6 +215,7 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
      * @param  array<int, PoeNinjaExchangeLine>  $items
      * @return array<int, array{
      *     rate: float,
+     *     volume: float|null,
      *     price_check_core_id: int,
      *     exchange_item_id: int,
      * }>
@@ -237,6 +238,7 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
 
             $prices[] = [
                 'rate' => $tradeItem->primaryValue,
+                'volume' => $tradeItem->volumePrimaryValue,
                 'price_check_core_id' => $coreId,
                 'exchange_item_id' => $exchangeItem->id,
             ];

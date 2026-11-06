@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Jobs\Fetch;
 
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
@@ -11,7 +11,7 @@ use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 
 #[Tries(1)]
-final class FetchPoeOnePricesJob implements ShouldQueue
+final class FetchPoeTwoPricesJob implements ShouldQueue
 {
     use Queueable;
 
@@ -22,7 +22,7 @@ final class FetchPoeOnePricesJob implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping)->releaseAfter(10)->expireAfter(600)];
+        return [(new WithoutOverlapping)->releaseAfter(10)->expireAfter(60)];
     }
 
     /**
@@ -41,8 +41,12 @@ final class FetchPoeOnePricesJob implements ShouldQueue
         PoeVersionServiceContract $versionService,
     ): void {
         /** @var PoeVersionDto $version */
-        $version = collect($versionService->getAll())->firstWhere('version', 'poe1');
+        $version = collect($versionService->getAll())->firstWhere('version', 'poe2');
 
-        $pricerService->importPickedForVersion($version);
+        $leagues = $pricerService->pickLeaguesForCheck($version);
+
+        foreach ($leagues as $league) {
+            FetchLeagueExchangePricesJob::dispatch($league);
+        }
     }
 }

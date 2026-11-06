@@ -38,7 +38,8 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
     /**
      * @return Collection<int, ExtendedPoeLeagueDto>
      */
-    private function pickLeaguesForCheck(PoeVersionDto $version): Collection
+    #[\Override]
+    public function pickLeaguesForCheck(PoeVersionDto $version): Collection
     {
         /** @var Collection<int, ExtendedPoeLeagueDto> $collection */
         $collection = collect($this->leagueRepository->getWithLastPriceCheckAndRule($version->id))

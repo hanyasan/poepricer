@@ -1,8 +1,10 @@
 <?php
 
 use App\Jobs\Compact\BaseExchangeCompactJob;
-use App\Jobs\FetchPoeOnePricesJob;
-use App\Jobs\FetchPoeTwoPricesJob;
+use App\Jobs\Fetch\FetchPoeOnePricesJob;
+use App\Jobs\Fetch\FetchPoeTwoPricesJob;
+use App\Jobs\Metrics\CollectBucketMetricsForLeagueJob;
+use App\Jobs\Metrics\RecalculateBetasForLeagueJob;
 use App\Jobs\SyncPoeLeaguesJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -23,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->job(SyncPoeLeaguesJob::class)->dailyAt('23:00');
         $schedule->job(FetchPoeOnePricesJob::class)->everyTenMinutes();
         $schedule->job(FetchPoeTwoPricesJob::class)->everyThirtyMinutes();
+        $schedule->job(CollectBucketMetricsForLeagueJob::class)->everySixHours();
+        $schedule->job(RecalculateBetasForLeagueJob::class)->dailyAt('20:00');
         $schedule->job(BaseExchangeCompactJob::class)->weeklyOn(1);
         $schedule->job(BaseExchangeCompactJob::class)->weeklyOn(4);
     })
