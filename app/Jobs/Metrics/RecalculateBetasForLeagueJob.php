@@ -9,7 +9,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 
-#[Tries(1)]
+#[Tries(5)]
 final class RecalculateBetasForLeagueJob implements ShouldQueue
 {
     use Queueable;
