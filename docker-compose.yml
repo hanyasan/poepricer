@@ -24,6 +24,24 @@ services:
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
 
+  # Nuxt dev server. The browser talks only to it; Nitro proxies /api/** to
+  # the `app` service over the compose network (NUXT_API_BASE).
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+      NUXT_API_BASE: http://app:8000
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+      - "127.0.0.1:24678:24678"
+    depends_on:
+      - app
+
   # Idle container used as the PhpStorm CLI interpreter for running PHPUnit.
   test:
     <<: *app

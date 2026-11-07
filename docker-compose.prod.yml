@@ -1,7 +1,8 @@
 name: poepricer-prod
 
-# Production stack: nginx in front of php-fpm, Horizon for queues and the
-# scheduler. There is no `test` container.
+# Production stack: Caddy (TLS) -> Nuxt -> nginx -> php-fpm, Horizon for queues
+# and the scheduler. Only Caddy is published; Laravel is reachable from the
+# compose network alone. There is no `test` container.
 # Usage: docker compose -f docker-compose.prod.yml up -d --build
 
 x-app: &app
@@ -47,8 +48,6 @@ services:
         GID: ${GID:-1000}
     image: poepricer-nginx:production
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8000}:80"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/up || exit 1"]
       interval: 10s
@@ -57,6 +56,43 @@ services:
       start_period: 15s
     depends_on:
       app:
+        condition: service_healthy
+
+  # Nuxt SPA and the Nitro server that proxies /api/** to nginx. Not published:
+  # Caddy is the only entry point.
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+      args:
+        NUXT_API_BASE: http://nginx
+    image: poepricer-frontend:production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      nginx:
+        condition: service_healthy
+
+  # TLS termination for hanyasan.net. Needs the DNS record pointing at this
+  # host and ports 80/443 open for the certificate to be issued.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      frontend:
         condition: service_healthy
 
   # Horizon manages the worker pool itself: the supervisors in config/horizon.php
@@ -121,3 +157,5 @@ services:
 volumes:
   pgdata:
   redisdata:
+  caddydata:
+  caddyconfig:
