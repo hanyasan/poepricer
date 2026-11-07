@@ -12,6 +12,7 @@ use App\Utility\Statistics\RobustStatistics;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final readonly class ExchangeMetricsService implements ExchangeMetricsServiceContract
 {
@@ -29,6 +30,10 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
     {
         $bucketStart = $this->alignToBucket($bucketStart);
 
+        Log::info(
+            'Starting collect metrics for league_id: ' . $leagueId
+        );
+
         foreach ($this->metricsItemRepository->getAllByLeague($leagueId) as $metricsItem) {
             DB::transaction(function () use ($metricsItem, $bucketStart): void {
                 $this->collectForMetricsItem($metricsItem, $bucketStart);
@@ -39,12 +44,20 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
             BucketMetricsTagEnum::bucket_metrics_get->name,
             BucketMetricsTagEnum::bucket_metrics_league_id->name.$leagueId,
         ])->flush();
+
+        Log::info(
+            'Finished collect metrics for league_id: ' . $leagueId
+        );
     }
 
     #[\Override]
     public function recalculateBetas(int $leagueId, CarbonImmutable $asOf): void
     {
         $windowStart = $asOf->subHours($this->bucketHours() * (int) config('poe.metrics.window_buckets'));
+
+        Log::info(
+            'Starting recalculate betas for league_id: ' . $leagueId
+        );
 
         foreach ($this->metricsItemRepository->getAllByLeague($leagueId) as $metricsItem) {
             $rows = $this->buildBetaRows($metricsItem, $windowStart, $asOf);
@@ -56,6 +69,10 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
             BetasMetricsTagEnum::betas_metrics_get->name,
             BetasMetricsTagEnum::betas_metrics_league_id->name.$leagueId,
         ])->flush();
+
+        Log::info(
+            'Finished recalculate betas for league_id: ' . $leagueId
+        );
     }
 
     private function collectForMetricsItem(ExchangeMetricsItemDto $metricsItem, CarbonImmutable $bucketStart): void
