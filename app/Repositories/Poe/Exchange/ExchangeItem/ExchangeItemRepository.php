@@ -42,4 +42,17 @@ final readonly class ExchangeItemRepository implements ExchangeItemRepositoryCon
             ['name', 'poe_category'],
         );
     }
+
+    #[\Override]
+    public function findByTradeId(int $leagueId, string $tradeId): ?ExchangeItemDto
+    {
+        $item = $this->model->newQuery()
+            ->where('poe_league_id', $leagueId)
+            ->where('trade_id', $tradeId)
+            ->first();
+
+        return $item === null
+            ? null
+            : $this->mapper->mapEloquentModel(ExchangeItemDto::class, $item);
+    }
 }

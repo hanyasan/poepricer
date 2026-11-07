@@ -203,4 +203,20 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
 
         return $currencies;
     }
+
+    /**
+     * @return array<int, float>
+     */
+    #[\Override]
+    public function getItemRates(int $priceCheckId, int $excludedExchangeItemId): array
+    {
+        return ExchangeItemPrice::query()
+            ->join('price_check_cores', 'price_check_cores.id', '=', 'exchange_item_prices.price_check_core_id')
+            ->where('price_check_cores.price_check_id', $priceCheckId)
+            ->where('exchange_item_prices.rate', '>', 0)
+            ->where('exchange_item_prices.exchange_item_id', '!=', $excludedExchangeItemId)
+            ->pluck('exchange_item_prices.rate')
+            ->map(static fn (mixed $rate): float => (float) $rate)
+            ->all();
+    }
 }

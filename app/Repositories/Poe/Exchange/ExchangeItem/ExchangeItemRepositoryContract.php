@@ -20,4 +20,6 @@ interface ExchangeItemRepositoryContract
      * }>  $insertData
      */
     public function upsert(array $insertData): void;
+
+    public function findByTradeId(int $leagueId, string $tradeId): ?ExchangeItemDto;
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services\DataServices\Metrics;
 
+use App\DataTransferObjects\ServiceObjects\ExchangeMetricsMixResultDto;
 use App\DataTransferObjects\ServiceObjects\ExchangeMetricsSeedResultDto;
 
 interface ExchangeMetricsItemSeedServiceContract
@@ -12,4 +13,11 @@ interface ExchangeMetricsItemSeedServiceContract
      * the top fifth of the items priced in it lies.
      */
     public function seedForLeague(int $leagueId): ExchangeMetricsSeedResultDto;
+
+    /**
+     * Adds one currency to the metrics items of a league, also when the league has
+     * others. The currency does not have to be among the core types yet: its rate is
+     * the reciprocal of its price in the latest price check, as the currency mix does.
+     */
+    public function mixItemForLeague(int $leagueId, string $tradeId): ExchangeMetricsMixResultDto;
 }

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Services\DataServices\Metrics;
 
+use App\DataTransferObjects\ServiceObjects\ExchangeMetricsMixResultDto;
 use App\DataTransferObjects\ServiceObjects\ExchangeMetricsSeedResultDto;
+use App\Enums\ExchangeMetricsMixStatusEnum;
 use App\Enums\ExchangeMetricsSeedStatusEnum;
 use App\Models\Poe\Exchange\ExchangeType;
 use App\Models\Poe\Exchange\Metrics\ExchangeMetricsItem;
@@ -167,6 +169,130 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
         $this->assertSame(0, ExchangeMetricsItem::query()->where('poe_league_id', $other->id)->count());
     }
 
+    public function test_mix_adds_the_currency_with_the_80th_percentile_of_prices_in_it(): void
+    {
+        $this->item($this->league, 'divine');
+        $this->item($this->league, 'mirror');
+
+        foreach (['a' => 10.0, 'b' => 20.0, 'c' => 30.0, 'd' => 40.0] as $name => $rate) {
+            $this->item($this->league, "item-{$name}");
+            $rates["item-{$name}"] = $rate;
+        }
+
+        $rates['mirror'] = 100.0;
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', $rates);
+
+        $result = $this->mixLeague('mirror');
+
+        // prices in mirror are [0.1, 0.2, 0.3, 0.4], position 0.8 * 3 = 2.4
+        $this->assertSame(ExchangeMetricsMixStatusEnum::Added, $result->status);
+        $this->assertEqualsWithDelta(0.34, $this->minPrice('mirror'), 1e-6);
+        $this->assertSame(4, $result->sample_size);
+        $this->assertSame('MIRROR', $result->name);
+    }
+
+    public function test_mix_works_when_the_league_already_has_other_metrics_items(): void
+    {
+        $divine = $this->item($this->league, 'divine');
+        $this->item($this->league, 'mirror');
+        $this->item($this->league, 'item-a');
+        $this->metricsItem($this->league, $divine, 3.0);
+
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['mirror' => 100.0, 'item-a' => 10.0]);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::Added, $this->mixLeague('mirror')->status);
+        $this->assertSame(2, ExchangeMetricsItem::query()->where('poe_league_id', $this->league->id)->count());
+        $this->assertEqualsWithDelta(3.0, $this->minPrice('divine'), 1e-6);
+    }
+
+    public function test_mix_leaves_out_items_with_a_non_positive_rate(): void
+    {
+        $this->item($this->league, 'divine');
+        $this->item($this->league, 'mirror');
+        $this->item($this->league, 'item-a');
+        $this->item($this->league, 'item-b');
+
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', [
+            'mirror' => 100.0,
+            'item-a' => 10.0,
+            'item-b' => 0.0,
+        ]);
+
+        $result = $this->mixLeague('mirror');
+
+        $this->assertSame(1, $result->sample_size);
+        $this->assertEqualsWithDelta(0.1, $this->minPrice('mirror'), 1e-6);
+    }
+
+    public function test_mix_uses_the_latest_price_check_only(): void
+    {
+        $this->item($this->league, 'divine');
+        $this->item($this->league, 'mirror');
+        $this->item($this->league, 'item-a');
+
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['mirror' => 10.0, 'item-a' => 10.0]);
+        $this->snapshot($this->league, $this->type, '2026-11-02 00:00:00+00', ['mirror' => 100.0, 'item-a' => 10.0]);
+
+        $this->mixLeague('mirror');
+
+        $this->assertEqualsWithDelta(0.1, $this->minPrice('mirror'), 1e-6);
+    }
+
+    public function test_mix_keeps_the_existing_row_untouched(): void
+    {
+        $mirror = $this->item($this->league, 'mirror');
+        $this->item($this->league, 'item-a');
+        $this->metricsItem($this->league, $mirror, 5.0);
+
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['mirror' => 100.0, 'item-a' => 10.0]);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::AlreadyExists, $this->mixLeague('mirror')->status);
+        $this->assertEqualsWithDelta(5.0, $this->minPrice('mirror'), 1e-6);
+    }
+
+    public function test_mix_reports_an_unknown_trade_id(): void
+    {
+        $this->item($this->league, 'divine');
+        $this->item($this->league, 'mirror');
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['mirror' => 100.0]);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::ItemNotFound, $this->mixLeague('unknown')->status);
+    }
+
+    public function test_mix_does_not_find_an_item_of_another_league(): void
+    {
+        $other = $this->league('Other Mix League');
+        $this->item($other, 'mirror');
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', []);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::ItemNotFound, $this->mixLeague('mirror')->status);
+    }
+
+    public function test_mix_reports_a_league_without_price_checks(): void
+    {
+        $this->item($this->league, 'mirror');
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::NoPriceCheck, $this->mixLeague('mirror')->status);
+    }
+
+    public function test_mix_reports_an_item_without_a_price_in_the_latest_price_check(): void
+    {
+        $this->item($this->league, 'mirror');
+        $this->item($this->league, 'item-a');
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['item-a' => 10.0]);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::NoItemPrice, $this->mixLeague('mirror')->status);
+        $this->assertSame(0, ExchangeMetricsItem::query()->where('poe_league_id', $this->league->id)->count());
+    }
+
+    public function test_mix_reports_a_price_check_without_other_priced_items(): void
+    {
+        $this->item($this->league, 'mirror');
+        $this->snapshot($this->league, $this->type, '2026-11-01 00:00:00+00', ['mirror' => 100.0]);
+
+        $this->assertSame(ExchangeMetricsMixStatusEnum::NoPricedItems, $this->mixLeague('mirror')->status);
+    }
+
     private function seedLeague(): ExchangeMetricsSeedResultDto
     {
         return $this->app->make(ExchangeMetricsItemSeedServiceContract::class)->seedForLeague($this->league->id);
@@ -179,5 +305,10 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
             ->whereHas('exchangeItem', static fn ($query) => $query->where('trade_id', $tradeId))
             ->sole()
             ->min_price;
+    }
+
+    private function mixLeague(string $tradeId): ExchangeMetricsMixResultDto
+    {
+        return $this->app->make(ExchangeMetricsItemSeedServiceContract::class)->mixItemForLeague($this->league->id, $tradeId);
     }
 }

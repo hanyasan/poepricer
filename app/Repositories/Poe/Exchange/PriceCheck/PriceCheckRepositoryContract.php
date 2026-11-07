@@ -69,4 +69,12 @@ interface PriceCheckRepositoryContract
      * @return array<int, array{name: string, prices: array<int, float>}>
      */
     public function getPricesByCurrency(int $priceCheckId): array;
+
+    /**
+     * Positive rates, in the primary currency, of every priced item of the price check
+     * except the excluded one.
+     *
+     * @return array<int, float>
+     */
+    public function getItemRates(int $priceCheckId, int $excludedExchangeItemId): array;
 }

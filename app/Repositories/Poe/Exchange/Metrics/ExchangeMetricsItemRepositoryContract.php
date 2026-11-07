@@ -19,4 +19,6 @@ interface ExchangeMetricsItemRepositoryContract
      * @param  list<array{poe_league_id: int, exchange_item_id: int, min_price: float}>  $rows
      */
     public function insertMany(array $rows): void;
+
+    public function existsForLeagueItem(int $leagueId, int $exchangeItemId): bool;
 }
