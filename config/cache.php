@@ -1,6 +1,9 @@
 <?php
 
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
 use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
+use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use Illuminate\Support\Str;
 
@@ -136,6 +139,9 @@ return [
     'serializable_classes' => [
         ExchangeTypeDto::class,
         PoeVersionDto::class,
+        MainPoeLeagueDto::class,
+        ExchangeMarketMetricDto::class,
+        PriceCheckDto::class,
     ],
 
 ];

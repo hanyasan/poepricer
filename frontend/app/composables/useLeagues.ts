@@ -1,14 +1,27 @@
-import type { League } from '~/types/metrics'
+/**
+ * Makes sure the leagues are in the store: they are fetched once per page
+ * render on the server and reach the browser through the Pinia payload.
+ */
+export async function useLeagues() {
+  const store = useLeaguesStore()
+
+  await callOnce('leagues', () => store.load())
+
+  const { items: leagues, status } = storeToRefs(store)
+
+  return { leagues, status, refresh: store.load }
+}
 
 /**
- * Placeholder data until the Laravel API routes exist; the interface is the
- * one the real `/api` endpoints are expected to fulfil.
+ * A single league of the main list by its slug; `undefined` when the league
+ * is not part of it.
  */
-export function useLeagues() {
-  const leagues = ref<League[]>([
-    { game: 'poe1', slug: 'standard', name: 'Standard', isActive: true, lastSnapshotAt: null, basketSize: 0 },
-    { game: 'poe2', slug: 'standard', name: 'Standard', isActive: true, lastSnapshotAt: null, basketSize: 0 },
-  ])
+export async function useLeague(slug: MaybeRefOrGetter<string>) {
+  const store = useLeaguesStore()
 
-  return { leagues }
+  await callOnce('leagues', () => store.load())
+
+  const league = computed(() => store.bySlug(toValue(slug)))
+
+  return { league }
 }

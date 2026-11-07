@@ -3,11 +3,14 @@
 namespace App\Services\DataServices\Metrics;
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
+use App\Enums\Tags\BetasMetricsTagEnum;
+use App\Enums\Tags\BucketMetricsTagEnum;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
 use App\Utility\Statistics\RobustStatistics;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ExchangeMetricsService implements ExchangeMetricsServiceContract
@@ -31,6 +34,11 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
                 $this->collectForMetricsItem($metricsItem, $bucketStart);
             });
         }
+
+        Cache::tags([
+            BucketMetricsTagEnum::bucket_metrics_get->name,
+            BucketMetricsTagEnum::bucket_metrics_league_id->name.$leagueId,
+        ])->flush();
     }
 
     #[\Override]
@@ -43,6 +51,11 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
 
             $this->metricsRepository->upsertBetas($rows);
         }
+
+        Cache::tags([
+            BetasMetricsTagEnum::betas_metrics_get->name,
+            BetasMetricsTagEnum::betas_metrics_league_id->name.$leagueId,
+        ])->flush();
     }
 
     private function collectForMetricsItem(ExchangeMetricsItemDto $metricsItem, CarbonImmutable $bucketStart): void

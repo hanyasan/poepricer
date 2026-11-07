@@ -11,6 +11,7 @@ export interface League {
   isActive: boolean
   lastSnapshotAt: string | null
   basketSize: number
+  marketReturnSeries: SeriesPoint[]
 }
 
 export interface ItemMetricRow {

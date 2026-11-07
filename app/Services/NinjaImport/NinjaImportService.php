@@ -12,6 +12,7 @@ use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
+use App\Enums\Tags\ExchangePriceTagEnum;
 use App\Enums\Tags\PoeLeagueTagEnum;
 use App\Exceptions\Mapping\MapInvalidSourceException;
 use App\Exceptions\Mapping\MappingErrorException;
@@ -28,6 +29,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 final readonly class NinjaImportService implements NinjaImportServiceContract
 {
@@ -79,6 +81,11 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
             return $exchangeTypesImported;
         });
 
+        Cache::tags([
+            ExchangePriceTagEnum::price_get->name,
+            ExchangePriceTagEnum::price_league_id->name.$league->id,
+        ])->flush();
+
         Log::info(
             'Prices for league '.
             $league->league_name.
@@ -104,6 +111,11 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
                 );
             }
         }
+
+        Cache::tags([
+            PoeLeagueTagEnum::league->name,
+            PoeLeagueTagEnum::league_get->name,
+        ])->flush();
     }
 
     /**
@@ -156,10 +168,14 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         Collection $currentLeagues,
         PoeVersionDto $poeVersion,
     ): array {
-        $leaguesToInsert = $ninjaLeagues->map(static function (PoeNinjaLeague $league) use ($poeVersion) {
+        $startedAt = now()->toIso8601String();
+
+        $leaguesToInsert = $ninjaLeagues->map(static function (PoeNinjaLeague $league) use ($poeVersion, $startedAt) {
             return [
                 'league_name' => $league->name,
                 'ninja_league_id' => $league->id,
+                'slug' => $poeVersion->version.'-'.Str::slug($league->id),
+                'started_at' => $startedAt,
                 'poe_version_id' => $poeVersion->id,
                 'is_active' => true,
             ];
@@ -172,6 +188,8 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
             ->map(static fn (PoeLeagueDto $league) => [
                 'league_name' => $league->league_name,
                 'ninja_league_id' => $league->ninja_league_id,
+                'slug' => $poeVersion->version.'-'.Str::slug($league->ninja_league_id),
+                'started_at' => null,
                 'poe_version_id' => $league->poe_version_id,
                 'is_active' => false,
             ])

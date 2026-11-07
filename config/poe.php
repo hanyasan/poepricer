@@ -19,4 +19,8 @@ return [
     'compact' => [
         'days_stay' => (int) env('COMPACT_DAYS_STAY', 9),
     ],
+    'base' => [
+        'default_main_trade_id' => (string) env('BASE_MAIN_TRADE_ID', 'divine'),
+        'sparkline_days' => (int) env('BASE_SPARKLINE_DAYS', 7),
+    ],
 ];

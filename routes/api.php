@@ -1,9 +1,8 @@
 <?php
 
+use App\Http\Controllers\League\LeagueController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'metrics'], function () {
-    Route::group(['prefix' => 'leagues'], function () {
-//        Route::get('/leagues',  [Metrics::class, 'index']);
-    });
+Route::group(['prefix' => 'leagues'], function () {
+    Route::get('/', [LeagueController::class, 'index']);
 });

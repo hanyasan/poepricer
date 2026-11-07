@@ -3,7 +3,6 @@
 namespace App\Models\Poe\Exchange\Metrics;
 
 use App\Models\Poe\PoeLeague;
-use Carbon\Carbon;
 use Database\Factories\Poe\Exchange\Metrics\ExchangeMarketMetricFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property-read int $id
- * @property Carbon $bucket_start
+ * @property string $bucket_start
  * @property float $market_return
  * @property int $basket_size
  * @property-read int $poe_league_id
@@ -29,14 +28,6 @@ final class ExchangeMarketMetric extends Model
     protected $guarded = ['id'];
 
     public $timestamps = false;
-
-    #[\Override]
-    protected function casts(): array
-    {
-        return [
-            'bucket_start' => 'datetime',
-        ];
-    }
 
     public function league(): BelongsTo
     {

@@ -1,5 +1,5 @@
 # Development: `nuxt dev` with the sources bind-mounted by docker-compose.yml.
-# Production: static SPA plus the Nitro server that proxies /api to Laravel.
+# Production: the Nitro server that renders the pages (SSR) and proxies /api to Laravel.
 FROM node:24-alpine AS base
 
 WORKDIR /app

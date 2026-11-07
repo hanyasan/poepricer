@@ -3,7 +3,6 @@
 namespace App\Models\Poe\Exchange\Metrics;
 
 use App\Models\Poe\Exchange\ExchangeItem;
-use Carbon\Carbon;
 use Database\Factories\Poe\Exchange\Metrics\ExchangeItemMetricFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property-read int $id
- * @property Carbon $bucket_start
+ * @property string $bucket_start
  * @property float $price
  * @property float|null $log_return
  * @property float|null $residual
@@ -32,14 +31,6 @@ final class ExchangeItemMetric extends Model
     protected $guarded = ['id'];
 
     public $timestamps = false;
-
-    #[\Override]
-    protected function casts(): array
-    {
-        return [
-            'bucket_start' => 'datetime',
-        ];
-    }
 
     public function exchangeItem(): BelongsTo
     {

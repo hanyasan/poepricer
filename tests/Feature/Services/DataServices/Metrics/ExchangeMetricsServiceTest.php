@@ -64,7 +64,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->assertNull($rows[$this->itemA->id]->residual);
         $this->assertNull($rows[$this->itemA->id]->residual_mad);
         $this->assertSame(0, $rows[$this->itemA->id]->observations);
-        $this->assertSame(0, ExchangeMarketMetric::query()->count());
+        $this->assertSame(0, $this->marketMetricsCount($this->league));
     }
 
     public function test_the_price_of_a_bucket_is_the_median_of_its_snapshots(): void
@@ -86,7 +86,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->collect('2030-01-01 12:00:00');
 
         $rows = $this->itemMetrics('2030-01-01 12:00:00');
-        $market = ExchangeMarketMetric::query()->sole();
+        $market = ExchangeMarketMetric::query()->where('poe_league_id', $this->league->id)->sole();
 
         $this->assertEqualsWithDelta(log(1.1), $rows[$this->itemA->id]->log_return, 1e-12);
         $this->assertEqualsWithDelta(0.0, $rows[$this->itemB->id]->log_return, 1e-12);
@@ -303,15 +303,15 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->collect('2030-01-01 12:00:00');
 
         $this->assertSame(2, ExchangeItemMetric::query()->where('bucket_start', '2030-01-01 12:00:00+00')->count());
-        $this->assertSame(1, ExchangeMarketMetric::query()->count());
+        $this->assertSame(1, $this->marketMetricsCount($this->league));
     }
 
     public function test_a_bucket_without_prices_stores_nothing(): void
     {
         $this->collect('2030-01-02 00:00:00');
 
-        $this->assertSame(0, ExchangeItemMetric::query()->count());
-        $this->assertSame(0, ExchangeMarketMetric::query()->count());
+        $this->assertSame(0, $this->itemMetricsCount($this->league));
+        $this->assertSame(0, $this->marketMetricsCount($this->league));
     }
 
     public function test_a_league_without_metrics_items_stores_nothing(): void
@@ -322,7 +322,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $this->service()->collectBucketMetrics($other->id, CarbonImmutable::parse('2030-01-02 00:00:00', 'UTC'));
 
-        $this->assertSame(0, ExchangeItemMetric::query()->count());
+        $this->assertSame(0, $this->itemMetricsCount($other));
     }
 
     public function test_it_calculates_the_beta_and_r_squared_over_the_window(): void
@@ -341,7 +341,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->assertEqualsWithDelta($weight * 2.0 + (1 - $weight), $beta->beta, 1e-9);
         $this->assertEqualsWithDelta(1.0, $beta->r_squared, 1e-9);
         $this->assertSame(8, $beta->observations);
-        $this->assertSame('2030-01-08 00:00:00', $beta->calculated_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('2030-01-08 00:00:00+00', $beta->calculated_at);
     }
 
     public function test_it_skips_items_with_too_few_observations(): void
@@ -408,6 +408,18 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
     /**
      * @return array<int, ExchangeItemMetric> keyed by item id
      */
+    private function itemMetricsCount(PoeLeague $league): int
+    {
+        return ExchangeItemMetric::query()
+            ->whereIn('exchange_item_id', ExchangeItem::query()->where('poe_league_id', $league->id)->select('id'))
+            ->count();
+    }
+
+    private function marketMetricsCount(PoeLeague $league): int
+    {
+        return ExchangeMarketMetric::query()->where('poe_league_id', $league->id)->count();
+    }
+
     private function itemMetrics(?string $bucketStart = null): array
     {
         return ExchangeItemMetric::query()

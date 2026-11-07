@@ -3,12 +3,19 @@
 namespace App\Repositories\Poe;
 
 use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
+use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface PoeLeagueRepositoryContract
 {
+    /**
+     * @return MainPoeLeagueDto[]
+     */
+    public function allMainLeaguesWithSparkline(string $exchangeItemTradeId, CarbonInterface $since): array;
+
     /**
      * @return ExtendedPoeLeagueDto[]
      */
@@ -43,6 +50,8 @@ interface PoeLeagueRepositoryContract
      * @param  array<int, array{
      *     league_name: string,
      *     ninja_league_id: string,
+     *     slug: string,
+     *     started_at: string|null,
      *     poe_version_id: int,
      *     is_active: bool,
      * }>  $paramsWithValues

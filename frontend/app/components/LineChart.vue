@@ -20,5 +20,9 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <VChart :option="option" autoresize class="h-72 w-full" />
+  <div class="h-72 w-full">
+    <ClientOnly>
+      <VChart :option="option" autoresize />
+    </ClientOnly>
+  </div>
 </template>

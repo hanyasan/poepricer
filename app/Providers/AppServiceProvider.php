@@ -26,6 +26,8 @@ use App\Services\DataServices\Metrics\PriceCheckCurrencyMixService;
 use App\Services\DataServices\Metrics\PriceCheckCurrencyMixServiceContract;
 use App\Services\DataServices\Poe\ExchangeTypeService;
 use App\Services\DataServices\Poe\ExchangeTypeServiceContract;
+use App\Services\DataServices\Poe\PoeLeagueService;
+use App\Services\DataServices\Poe\PoeLeagueServiceContract;
 use App\Services\DataServices\Poe\PoeVersionService;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
 use App\Services\NinjaImport\NinjaImportService;
@@ -55,6 +57,7 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeMetricsServiceContract::class => ExchangeMetricsService::class,
         PriceCheckCurrencyMixServiceContract::class => PriceCheckCurrencyMixService::class,
         ExchangeMetricsItemSeedServiceContract::class => ExchangeMetricsItemSeedService::class,
+        PoeLeagueServiceContract::class => PoeLeagueService::class,
     ];
 
     /**

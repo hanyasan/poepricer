@@ -3,7 +3,6 @@
 namespace App\Models\Poe\Exchange\Metrics;
 
 use App\Models\Poe\Exchange\ExchangeItem;
-use Carbon\Carbon;
 use Database\Factories\Poe\Exchange\Metrics\ExchangeItemBetaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property-read int $id
- * @property Carbon $calculated_at
+ * @property string $calculated_at
  * @property float $beta
  * @property float $raw_beta
  * @property float|null $r_squared
@@ -31,14 +30,6 @@ final class ExchangeItemBeta extends Model
     protected $guarded = ['id'];
 
     public $timestamps = false;
-
-    #[\Override]
-    protected function casts(): array
-    {
-        return [
-            'calculated_at' => 'datetime',
-        ];
-    }
 
     public function exchangeItem(): BelongsTo
     {

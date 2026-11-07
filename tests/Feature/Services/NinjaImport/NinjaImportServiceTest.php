@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Tests\FeatureTestCase;
 
 class NinjaImportServiceTest extends FeatureTestCase
@@ -49,15 +50,51 @@ class NinjaImportServiceTest extends FeatureTestCase
         $this->assertDatabaseHas('poe_leagues', [
             'league_name' => 'League One',
             'ninja_league_id' => 'League One',
+            'slug' => 'poe1-league-one',
             'poe_version_id' => $poe1Id,
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('poe_leagues', [
             'league_name' => 'League Two',
             'ninja_league_id' => 'League Two',
+            'slug' => 'poe2-league-two',
             'poe_version_id' => $poe2Id,
             'is_active' => true,
         ]);
+    }
+
+    public function test_it_sets_started_at_for_new_leagues(): void
+    {
+        $this->travelTo('2030-05-05 10:00:00');
+        Http::fake([
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Fresh League', 'id' => 'Fresh League']]),
+            'poe.ninja/poe2/*' => Http::response([]),
+        ]);
+
+        $this->service()->updateAllLeaguesFromNinja();
+
+        $league = PoeLeague::query()->where('slug', 'poe1-fresh-league')->firstOrFail();
+
+        $this->assertStringStartsWith('2030-05-05 10:00:00', (string) $league->started_at);
+    }
+
+    public function test_it_keeps_slug_and_started_at_of_a_league_already_in_the_database(): void
+    {
+        $poe1 = PoeVersion::query()->where('version', 'poe1')->firstOrFail();
+        $existing = $this->importLeague('Old League', $poe1, 'Old League');
+        $existing->update(['slug' => 'poe1-custom-slug', 'started_at' => '2020-01-01 00:00:00+00']);
+        Http::fake([
+            'poe.ninja/poe1/*' => Http::response([['name' => 'Old League Renamed', 'id' => 'Old League']]),
+            'poe.ninja/poe2/*' => Http::response([]),
+        ]);
+
+        $this->service()->updateAllLeaguesFromNinja();
+
+        $existing->refresh();
+
+        $this->assertSame('Old League Renamed', $existing->league_name);
+        $this->assertSame('poe1-custom-slug', $existing->slug);
+        $this->assertStringStartsWith('2020-01-01', (string) $existing->started_at);
     }
 
     public function test_it_requests_the_leagues_endpoint_for_each_version(): void
@@ -744,6 +781,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         return PoeLeague::query()->create([
             'league_name' => $name,
             'ninja_league_id' => $ninjaLeagueId,
+            'slug' => $version->version.'-'.Str::slug($ninjaLeagueId),
             'is_active' => true,
             'poe_version_id' => $version->id,
         ]);
@@ -783,6 +821,7 @@ class NinjaImportServiceTest extends FeatureTestCase
         return PoeLeague::query()->create([
             'league_name' => $name,
             'ninja_league_id' => $name,
+            'slug' => 'v'.$versionId.'-'.Str::slug($name),
             'is_active' => $isActive,
             'poe_version_id' => $versionId,
         ]);

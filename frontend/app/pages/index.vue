@@ -1,18 +1,80 @@
 <script setup lang="ts">
-const { leagues } = useLeagues()
+import type { Game, League } from '~/types/metrics'
+
+const { leagues, status, refresh } = await useLeagues()
+
+const gameTitles: Record<Game, string> = { poe1: 'Path of Exile', poe2: 'Path of Exile 2' }
+
+const groups = computed(() =>
+  (Object.keys(gameTitles) as Game[])
+    .map((game) => ({ game, title: gameTitles[game], leagues: leagues.value.filter((league) => league.game === game) }))
+    .filter((group) => group.leagues.length > 0),
+)
+
+function lastReturn(league: League): number | null {
+  const series = league.marketReturnSeries
+  return series.length > 0 ? series[series.length - 1]!.value : null
+}
+
+function formatReturn(value: number): string {
+  return `${value > 0 ? '+' : ''}${(value * 100).toFixed(2)}%`
+}
+
+function returnClass(value: number): string {
+  if (value > 0) return 'text-success'
+  return value < 0 ? 'text-error' : 'text-muted'
+}
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <h1 class="text-2xl font-semibold">Лиги</h1>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <NuxtLink v-for="league in leagues" :key="`${league.game}-${league.slug}`" :to="`/${league.game}/${league.slug}`">
-        <UCard>
-          <p class="text-xs uppercase text-muted">{{ league.game }}</p>
-          <p class="text-lg font-medium">{{ league.name }}</p>
-          <p class="text-sm text-muted">Предметов в корзине: {{ league.basketSize }}</p>
-        </UCard>
-      </NuxtLink>
+
+    <div v-if="status === 'pending'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <USkeleton v-for="index in 3" :key="index" class="h-44" />
     </div>
+
+    <UAlert
+      v-else-if="status === 'error'"
+      color="error"
+      variant="subtle"
+      icon="i-lucide-triangle-alert"
+      title="Не удалось загрузить список лиг"
+      :actions="[{ label: 'Повторить', onClick: () => refresh() }]"
+    />
+
+    <p v-else-if="groups.length === 0" class="text-muted">Пока нет лиг с данными за последние 7 дней.</p>
+
+    <template v-else>
+      <section v-for="group in groups" :key="group.game" class="space-y-3">
+        <h2 class="text-lg font-medium text-muted">{{ group.title }}</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <NuxtLink v-for="league in group.leagues" :key="league.slug" :to="`/${league.slug}`">
+            <UCard class="h-full transition hover:ring-primary">
+              <p class="text-lg font-medium">{{ league.name }}</p>
+
+              <dl class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <dt class="text-muted">В корзине</dt>
+                  <dd class="font-medium">{{ league.basketSize }}</dd>
+                </div>
+                <div>
+                  <dt class="text-muted">Обновлено</dt>
+                  <dd class="font-medium"><LocalDateTime :value="league.lastSnapshotAt" empty="нет снимков" /></dd>
+                </div>
+              </dl>
+
+              <div class="mt-3 flex items-end justify-between text-sm">
+                <span class="text-muted">Доходность рынка, 7д</span>
+                <span v-if="lastReturn(league) !== null" :class="returnClass(lastReturn(league)!)" class="font-medium">
+                  {{ formatReturn(lastReturn(league)!) }}
+                </span>
+              </div>
+              <MarketReturnSparkline :points="league.marketReturnSeries" />
+            </UCard>
+          </NuxtLink>
+        </div>
+      </section>
+    </template>
   </div>
 </template>

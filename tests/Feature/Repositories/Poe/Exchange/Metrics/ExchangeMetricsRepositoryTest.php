@@ -56,9 +56,11 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
 
     public function test_upsert_item_metrics_with_no_rows_stores_nothing(): void
     {
+        $countBefore = ExchangeItemMetric::query()->count();
+
         $this->repository()->upsertItemMetrics([]);
 
-        $this->assertSame(0, ExchangeItemMetric::query()->count());
+        $this->assertSame($countBefore, ExchangeItemMetric::query()->count());
     }
 
     public function test_upsert_market_metric_updates_the_same_bucket(): void
