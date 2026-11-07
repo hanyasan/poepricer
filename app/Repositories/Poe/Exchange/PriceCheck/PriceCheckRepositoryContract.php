@@ -33,4 +33,29 @@ interface PriceCheckRepositoryContract
      * }>  $pricesData
      */
     public function insertPrices(array $pricesData): void;
+
+    /**
+     * Ids of the cores of the price check that have no core type with the trade id.
+     *
+     * @return array<int, int>
+     */
+    public function getCoreIdsWithoutCoreType(int $priceCheckId, string $tradeId): array;
+
+    /**
+     * The price of an item in the primary currency of its core, found in any core of
+     * the price check, together with the item name. Null when the item is not priced.
+     *
+     * @return array{rate: float, name: string}|null
+     */
+    public function findItemPrimaryPrice(int $priceCheckId, string $tradeId): ?array;
+
+    /**
+     * @param  array<int, array{
+     *     rate: float,
+     *     exchange_item_trade_id: string,
+     *     name: string,
+     *     price_check_core_id: int,
+     * }>  $coreTypesData
+     */
+    public function insertCoreTypes(array $coreTypesData): void;
 }

@@ -18,6 +18,19 @@
 - Цена предмета в валюте C = `exchange_item_prices.rate` × `price_check_core_types.rate` валюты C из того же core (`exchange_item_trade_id` = `trade_id` валюты). Основная валюта учёта — та, у которой rate = 1. Если в core нет курса валюты C, цена этого core пропускается.
 - Сама валюта метрики в корзину и метрики предметов не входит.
 
+### 2.1 Подмешивание валют в price check
+
+Валюта метрики, которой нет среди родных типов core (divine, chaos, exalted), например Mirror, подмешивается в `price_check_core_types` при импорте. Тогда метрики считаются и относительно неё.
+
+- Набор подмешиваемых валют задают строки `exchange_metrics_items` лиги. Отдельной таблицы нет. Чтобы добавить валюту, нужна строка `exchange_metrics_items` для её предмета.
+- Подмешивание выполняется после импорта всех типов, в той же транзакции, что и цены price check.
+- Если тип с этим `trade_id` уже есть во всех core price check, валюта пропускается. Если он есть только в части core, добавляется в остальные.
+- Курс берётся из цены предмета в этом же price check (`exchange_item_prices.rate`, в основной валюте): `rate = 1 / цена`. Все core одного price check имеют общую основную валюту, поэтому один курс записывается во все core. Название типа берётся из названия предмета.
+- Если у предмета нет цены в price check или она не больше нуля, валюта не подмешивается. Такой снимок просто не участвует в расчёте метрик в этой валюте.
+- Повторный вызов не создаёт дубликатов.
+- Порог `min_price` для такой валюты задаётся в её единицах. Например, для Mirror (около 6400 div) порог в 5 div равен примерно 0,0008.
+- Обратное заполнение для уже сохранённых price check не делается. Метрики в подмешанной валюте начинаются с первых новых price check.
+
 ## 3. Корзины времени
 
 - Шаг 12 часов, границы по UTC (00:00, 12:00). Корзина `[start, start + 12h)`.
@@ -62,6 +75,7 @@
 - Сервис `App\Services\DataServices\Metrics\ExchangeMetricsService` (контракт + реализация), методы:
   - `collectBucketMetrics(int $leagueId, CarbonImmutable $bucketStart): void` (раз в 12 часов);
   - `recalculateBetas(int $leagueId, CarbonImmutable $asOf): void` (раз в сутки).
+- Сервис `App\Services\DataServices\Metrics\PriceCheckCurrencyMixService` (контракт + реализация), метод `mixInCurrencies(int $priceCheckId, int $leagueId): void`. Вызывается из `NinjaImportService::checkExchangePrices`. Для него в `PriceCheckRepository` добавлены `getCoreIdsWithoutCoreType`, `findItemPrimaryPrice`, `insertCoreTypes`.
 - Репозитории и DTO по соглашениям проекта (`Contract`, `final readonly`, маппер Valinor). Регистрация в `AppServiceProvider`.
 - Статистика (медиана, MAD, Тейл–Сен, R²) в отдельном классе без зависимостей от фреймворка.
 - Для новых моделей: фабрики. Тесты: feature для репозиториев и сервиса, unit для статистики.

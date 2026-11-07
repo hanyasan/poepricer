@@ -20,6 +20,8 @@ use App\Services\DataServices\Compact\ExchangeCompactService;
 use App\Services\DataServices\Compact\ExchangeCompactServiceContract;
 use App\Services\DataServices\Metrics\ExchangeMetricsService;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
+use App\Services\DataServices\Metrics\PriceCheckCurrencyMixService;
+use App\Services\DataServices\Metrics\PriceCheckCurrencyMixServiceContract;
 use App\Services\DataServices\Poe\ExchangeTypeService;
 use App\Services\DataServices\Poe\ExchangeTypeServiceContract;
 use App\Services\DataServices\Poe\PoeVersionService;
@@ -49,6 +51,7 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeBucketPriceRepositoryContract::class => ExchangeBucketPriceRepository::class,
         ExchangeMetricsRepositoryContract::class => ExchangeMetricsRepository::class,
         ExchangeMetricsServiceContract::class => ExchangeMetricsService::class,
+        PriceCheckCurrencyMixServiceContract::class => PriceCheckCurrencyMixService::class,
     ];
 
     /**

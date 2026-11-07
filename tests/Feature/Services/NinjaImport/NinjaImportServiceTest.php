@@ -7,8 +7,10 @@ use App\Enums\Tags\PoeLeagueTagEnum;
 use App\Models\Poe\Exchange\ExchangeItem;
 use App\Models\Poe\Exchange\ExchangeItemPrice;
 use App\Models\Poe\Exchange\ExchangeType;
+use App\Models\Poe\Exchange\Metrics\ExchangeMetricsItem;
 use App\Models\Poe\Exchange\PriceCheck;
 use App\Models\Poe\Exchange\PriceCheckCore;
+use App\Models\Poe\Exchange\PriceCheckCoreType;
 use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
 use App\Models\Poe\PoeVersion;
@@ -507,6 +509,64 @@ class NinjaImportServiceTest extends FeatureTestCase
                 ->where('price_check_core_id', $this->coreIdOf($league))
                 ->pluck('volume')
                 ->all(),
+        );
+    }
+
+    public function test_it_mixes_the_metrics_currencies_into_every_core_of_the_price_check(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+        $this->exchangeType('type-beta', $version);
+
+        ExchangeMetricsItem::factory()
+            ->forLeagueCurrency($league, $this->exchangeItem($league, 'mirror', 'Mirror'))
+            ->create();
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            coreItems: [['id' => 'divine', 'name' => 'Divine Orb', 'category' => 'type-alpha']],
+            rates: ['exalted' => 600.0],
+            lines: ['mirror' => 4000.0],
+            items: [['id' => 'mirror', 'name' => 'Mirror', 'category' => 'type-alpha']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $cores = PriceCheckCore::query()->where('price_check_id', $this->priceCheckIdOf($league))->get();
+
+        $this->assertCount(2, $cores);
+
+        foreach ($cores as $core) {
+            $this->assertSame(
+                [1 / 4000.0],
+                PriceCheckCoreType::query()
+                    ->where('price_check_core_id', $core->id)
+                    ->where('exchange_item_trade_id', 'mirror')
+                    ->pluck('rate')
+                    ->all(),
+            );
+        }
+    }
+
+    public function test_it_mixes_nothing_without_metrics_items(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            lines: ['mirror' => 4000.0],
+            items: [['id' => 'mirror', 'name' => 'Mirror', 'category' => 'type-alpha']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertSame(
+            0,
+            PriceCheckCoreType::query()
+                ->where('exchange_item_trade_id', 'mirror')
+                ->where('price_check_core_id', $this->coreIdOf($league))
+                ->count(),
         );
     }
 

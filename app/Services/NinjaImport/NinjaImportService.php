@@ -19,6 +19,7 @@ use App\HttpClients\NinjaClient;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
+use App\Services\DataServices\Metrics\PriceCheckCurrencyMixServiceContract;
 use App\Services\DataServices\Poe\ExchangeTypeServiceContract;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
 use Illuminate\Http\Client\ConnectionException;
@@ -37,6 +38,7 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         private PriceCheckRepositoryContract $priceCheckRepository,
         private ExchangeTypeServiceContract $exchangeTypeService,
         private ExchangeItemRepositoryContract $exchangeItemRepository,
+        private PriceCheckCurrencyMixServiceContract $currencyMixService,
     ) {}
 
     #[\Override]
@@ -71,6 +73,8 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
                     throw $exception;
                 }
             }
+
+            $this->currencyMixService->mixInCurrencies($priceCheck->id, $league->id);
 
             return $exchangeTypesImported;
         });

@@ -7,6 +7,7 @@ use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
 use App\Models\Poe\Exchange\ExchangeItemPrice;
 use App\Models\Poe\Exchange\PriceCheck;
 use App\Models\Poe\Exchange\PriceCheckCore;
+use App\Models\Poe\Exchange\PriceCheckCoreType;
 use App\Utility\Mapper\MapperServiceContract;
 use Illuminate\Support\Facades\DB;
 
@@ -94,5 +95,62 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
                     'price_check_core_id' => $priceData['price_check_core_id'],
                 ];
             }, $pricesData));
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    #[\Override]
+    public function getCoreIdsWithoutCoreType(int $priceCheckId, string $tradeId): array
+    {
+        return PriceCheckCore::query()
+            ->where('price_check_id', $priceCheckId)
+            ->whereDoesntHave(
+                'priceCheckCoreTypes',
+                static fn ($query) => $query->where('exchange_item_trade_id', $tradeId),
+            )
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @return array{rate: float, name: string}|null
+     */
+    #[\Override]
+    public function findItemPrimaryPrice(int $priceCheckId, string $tradeId): ?array
+    {
+        $price = ExchangeItemPrice::query()
+            ->join('exchange_items', 'exchange_items.id', '=', 'exchange_item_prices.exchange_item_id')
+            ->join('price_check_cores', 'price_check_cores.id', '=', 'exchange_item_prices.price_check_core_id')
+            ->where('price_check_cores.price_check_id', $priceCheckId)
+            ->where('exchange_items.trade_id', $tradeId)
+            ->orderBy('exchange_item_prices.id')
+            ->select(['exchange_item_prices.rate', 'exchange_items.name'])
+            ->first();
+
+        if ($price === null) {
+            return null;
+        }
+
+        return [
+            'rate' => $price->rate,
+            'name' => (string) $price->getAttribute('name'),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *     rate: float,
+     *     exchange_item_trade_id: string,
+     *     name: string,
+     *     price_check_core_id: int,
+     * }>  $coreTypesData
+     */
+    #[\Override]
+    public function insertCoreTypes(array $coreTypesData): void
+    {
+        PriceCheckCoreType::query()->insert($coreTypesData);
     }
 }

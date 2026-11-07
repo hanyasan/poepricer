@@ -228,6 +228,81 @@ class PriceCheckRepositoryTest extends FeatureTestCase
         $this->assertSame($before, ExchangeItemPrice::query()->count());
     }
 
+    public function test_get_core_ids_without_core_type_returns_only_cores_that_lack_it(): void
+    {
+        $league = $this->league('Core Ids League');
+        $priceCheck = $this->priceCheck($league);
+        $otherPriceCheck = $this->priceCheck($league);
+
+        $with = $this->core($priceCheck, $this->exchangeType('type-alpha'));
+        $without = $this->core($priceCheck, $this->exchangeType('type-beta'));
+        $other = $this->core($otherPriceCheck, $this->exchangeType('type-gamma'));
+
+        PriceCheckCoreType::query()->create([
+            'rate' => 1.0,
+            'exchange_item_trade_id' => 'item-c',
+            'name' => 'Item C',
+            'price_check_core_id' => $with->id,
+        ]);
+
+        $ids = $this->repository()->getCoreIdsWithoutCoreType($priceCheck->id, 'item-c');
+
+        $this->assertSame([$without->id], $ids);
+        $this->assertNotContains($other->id, $ids);
+    }
+
+    public function test_find_item_primary_price_returns_the_rate_and_name_of_the_item(): void
+    {
+        $league = $this->league('Primary Price League');
+        $priceCheck = $this->priceCheck($league);
+        $core = $this->core($priceCheck, $this->exchangeType('type-alpha'));
+        $item = $this->item($league, 'item-b', 'Item B');
+
+        $this->repository()->insertPrices([
+            ['rate' => 6373.0, 'price_check_core_id' => $core->id, 'exchange_item_id' => $item->id],
+        ]);
+
+        $this->assertSame(
+            ['rate' => 6373.0, 'name' => 'Item B'],
+            $this->repository()->findItemPrimaryPrice($priceCheck->id, 'item-b'),
+        );
+    }
+
+    public function test_find_item_primary_price_ignores_other_price_checks_and_unpriced_items(): void
+    {
+        $league = $this->league('Primary Price Other League');
+        $priceCheck = $this->priceCheck($league);
+        $otherPriceCheck = $this->priceCheck($league);
+        $otherCore = $this->core($otherPriceCheck, $this->exchangeType('type-alpha'));
+        $item = $this->item($league, 'item-b', 'Item B');
+
+        $this->repository()->insertPrices([
+            ['rate' => 1.0, 'price_check_core_id' => $otherCore->id, 'exchange_item_id' => $item->id],
+        ]);
+
+        $this->assertNull($this->repository()->findItemPrimaryPrice($priceCheck->id, 'item-b'));
+        $this->assertNull($this->repository()->findItemPrimaryPrice($otherPriceCheck->id, 'item-unknown'));
+    }
+
+    public function test_insert_core_types_persists_every_row(): void
+    {
+        $league = $this->league('Insert Core Types League');
+        $core = $this->core($this->priceCheck($league), $this->exchangeType('type-alpha'));
+
+        $this->repository()->insertCoreTypes([
+            ['rate' => 0.5, 'exchange_item_trade_id' => 'item-c', 'name' => 'Item C', 'price_check_core_id' => $core->id],
+            ['rate' => 2.0, 'exchange_item_trade_id' => 'item-d', 'name' => 'Item D', 'price_check_core_id' => $core->id],
+        ]);
+
+        $this->assertSame(2, PriceCheckCoreType::query()->where('price_check_core_id', $core->id)->count());
+        $this->assertDatabaseHas('price_check_core_types', [
+            'rate' => 0.5,
+            'exchange_item_trade_id' => 'item-c',
+            'name' => 'Item C',
+            'price_check_core_id' => $core->id,
+        ]);
+    }
+
     public function test_delete_many_removes_only_the_given_rows(): void
     {
         $league = $this->league('Delete League');
