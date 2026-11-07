@@ -58,4 +58,15 @@ interface PriceCheckRepositoryContract
      * }>  $coreTypesData
      */
     public function insertCoreTypes(array $coreTypesData): void;
+
+    public function findLatestIdByLeague(int $leagueId): ?int;
+
+    /**
+     * Prices of the items of the price check measured in each currency of the core
+     * types, keyed by the exchange item id of the currency. The currency itself and
+     * items with a non-positive price or core rate are left out.
+     *
+     * @return array<int, array{name: string, prices: array<int, float>}>
+     */
+    public function getPricesByCurrency(int $priceCheckId): array;
 }

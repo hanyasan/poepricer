@@ -30,6 +30,37 @@ class RobustStatisticsTest extends TestCase
         $this->statistics()->median([]);
     }
 
+    public function test_percentile_interpolates_between_the_closest_ranks(): void
+    {
+        // position 0.8 * 4 = 3.2 -> 4 + 0.2 * (5 - 4)
+        $this->assertEqualsWithDelta(4.2, $this->statistics()->percentile([5.0, 1.0, 3.0, 2.0, 4.0], 0.8), 1e-9);
+    }
+
+    public function test_percentile_bounds_are_the_smallest_and_the_largest_value(): void
+    {
+        $this->assertSame(1.0, $this->statistics()->percentile([3.0, 1.0, 2.0], 0.0));
+        $this->assertSame(3.0, $this->statistics()->percentile([3.0, 1.0, 2.0], 1.0));
+    }
+
+    public function test_percentile_of_a_single_value_is_that_value(): void
+    {
+        $this->assertSame(7.0, $this->statistics()->percentile([7.0], 0.8));
+    }
+
+    public function test_percentile_of_no_values_is_rejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->statistics()->percentile([], 0.8);
+    }
+
+    public function test_percentile_fraction_out_of_range_is_rejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->statistics()->percentile([1.0], 1.5);
+    }
+
     public function test_scaled_mad_is_the_scaled_median_of_absolute_deviations(): void
     {
         // median 3, deviations [2, 1, 0, 1, 2] -> median 1

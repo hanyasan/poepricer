@@ -27,4 +27,21 @@ final readonly class ExchangeMetricsItemRepository implements ExchangeMetricsIte
                 ->get(),
         );
     }
+
+    #[\Override]
+    public function existsForLeague(int $leagueId): bool
+    {
+        return ExchangeMetricsItem::query()
+            ->where('poe_league_id', $leagueId)
+            ->exists();
+    }
+
+    /**
+     * @param  list<array{poe_league_id: int, exchange_item_id: int, min_price: float}>  $rows
+     */
+    #[\Override]
+    public function insertMany(array $rows): void
+    {
+        ExchangeMetricsItem::query()->insertOrIgnore($rows);
+    }
 }

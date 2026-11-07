@@ -9,6 +9,7 @@ use App\Models\Poe\Exchange\PriceCheck;
 use App\Models\Poe\Exchange\PriceCheckCore;
 use App\Models\Poe\Exchange\PriceCheckCoreType;
 use App\Utility\Mapper\MapperServiceContract;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
 final readonly class PriceCheckRepository implements PriceCheckRepositoryContract
@@ -152,5 +153,54 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
     public function insertCoreTypes(array $coreTypesData): void
     {
         PriceCheckCoreType::query()->insert($coreTypesData);
+    }
+
+    #[\Override]
+    public function findLatestIdByLeague(int $leagueId): ?int
+    {
+        $id = PriceCheck::query()
+            ->where('poe_league_id', $leagueId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    /**
+     * @return array<int, array{name: string, prices: array<int, float>}>
+     */
+    #[\Override]
+    public function getPricesByCurrency(int $priceCheckId): array
+    {
+        $currencies = [];
+
+        $rows = ExchangeItemPrice::query()
+            ->join('price_check_cores', 'price_check_cores.id', '=', 'exchange_item_prices.price_check_core_id')
+            ->join('price_checks', 'price_checks.id', '=', 'price_check_cores.price_check_id')
+            ->join('price_check_core_types', 'price_check_core_types.price_check_core_id', '=', 'price_check_cores.id')
+            ->join('exchange_items as currencies', static function (JoinClause $join): void {
+                $join->on('currencies.trade_id', '=', 'price_check_core_types.exchange_item_trade_id')
+                    ->on('currencies.poe_league_id', '=', 'price_checks.poe_league_id');
+            })
+            ->where('price_check_cores.price_check_id', $priceCheckId)
+            ->where('exchange_item_prices.rate', '>', 0)
+            ->where('price_check_core_types.rate', '>', 0)
+            ->whereColumn('exchange_item_prices.exchange_item_id', '!=', 'currencies.id')
+            ->select([
+                'currencies.id as currency_item_id',
+                'currencies.name as currency_name',
+                DB::raw('exchange_item_prices.rate * price_check_core_types.rate as price'),
+            ])
+            ->cursor();
+
+        foreach ($rows as $row) {
+            $currencyItemId = (int) $row->getAttribute('currency_item_id');
+
+            $currencies[$currencyItemId]['name'] = (string) $row->getAttribute('currency_name');
+            $currencies[$currencyItemId]['prices'][] = (float) $row->getAttribute('price');
+        }
+
+        return $currencies;
     }
 }

@@ -18,6 +18,8 @@ use App\Repositories\Poe\PoeLeagueRepository;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
 use App\Services\DataServices\Compact\ExchangeCompactService;
 use App\Services\DataServices\Compact\ExchangeCompactServiceContract;
+use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedService;
+use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedServiceContract;
 use App\Services\DataServices\Metrics\ExchangeMetricsService;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
 use App\Services\DataServices\Metrics\PriceCheckCurrencyMixService;
@@ -52,6 +54,7 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeMetricsRepositoryContract::class => ExchangeMetricsRepository::class,
         ExchangeMetricsServiceContract::class => ExchangeMetricsService::class,
         PriceCheckCurrencyMixServiceContract::class => PriceCheckCurrencyMixService::class,
+        ExchangeMetricsItemSeedServiceContract::class => ExchangeMetricsItemSeedService::class,
     ];
 
     /**

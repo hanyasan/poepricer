@@ -39,6 +39,34 @@ final readonly class RobustStatistics
     }
 
     /**
+     * Percentile with linear interpolation between the closest ranks.
+     *
+     * @param  array<int, float>  $values
+     * @param  float  $fraction  share of the values below the result, from 0 to 1
+     *
+     * @throws InvalidArgumentException when no values are given or the fraction is out of range
+     */
+    public function percentile(array $values, float $fraction): float
+    {
+        if ($values === []) {
+            throw new InvalidArgumentException('Percentile of an empty set is undefined.');
+        }
+
+        if ($fraction < 0.0 || $fraction > 1.0) {
+            throw new InvalidArgumentException('Percentile fraction must be between 0 and 1.');
+        }
+
+        $sorted = array_values($values);
+        sort($sorted);
+
+        $position = $fraction * (float) (count($sorted) - 1);
+        $lowerIndex = (int) floor($position);
+        $upperIndex = (int) ceil($position);
+
+        return $sorted[$lowerIndex] + ($sorted[$upperIndex] - $sorted[$lowerIndex]) * ($position - (float) $lowerIndex);
+    }
+
+    /**
      * Median absolute deviation, scaled to be comparable with the standard deviation.
      *
      * @param  array<int, float>  $values
