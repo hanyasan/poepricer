@@ -22,6 +22,8 @@ use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedService;
 use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedServiceContract;
 use App\Services\DataServices\Metrics\ExchangeMetricsService;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
+use App\Services\DataServices\Metrics\LeagueOverviewService;
+use App\Services\DataServices\Metrics\LeagueOverviewServiceContract;
 use App\Services\DataServices\Metrics\PriceCheckCurrencyMixService;
 use App\Services\DataServices\Metrics\PriceCheckCurrencyMixServiceContract;
 use App\Services\DataServices\Poe\ExchangeTypeService;
@@ -58,6 +60,7 @@ final class AppServiceProvider extends ServiceProvider
         PriceCheckCurrencyMixServiceContract::class => PriceCheckCurrencyMixService::class,
         ExchangeMetricsItemSeedServiceContract::class => ExchangeMetricsItemSeedService::class,
         PoeLeagueServiceContract::class => PoeLeagueService::class,
+        LeagueOverviewServiceContract::class => LeagueOverviewService::class,
     ];
 
     /**

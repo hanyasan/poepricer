@@ -155,6 +155,24 @@ final readonly class PoeLeagueRepository implements PoeLeagueRepositoryContract
         return $dto;
     }
 
+    #[\Override]
+    public function findActiveBySlug(string $slug): ?PoeLeagueDto
+    {
+        $league = PoeLeague::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if ($league === null) {
+            return null;
+        }
+
+        /** @var PoeLeagueDto $dto */
+        $dto = $this->mapper->mapEloquentModel(PoeLeagueDto::class, $league);
+
+        return $dto;
+    }
+
     /**
      * @param  array<int, array{
      *     league_name: string,

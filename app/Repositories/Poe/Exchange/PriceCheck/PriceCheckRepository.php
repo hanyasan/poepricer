@@ -156,6 +156,16 @@ final readonly class PriceCheckRepository implements PriceCheckRepositoryContrac
     }
 
     #[\Override]
+    public function findLatestCreatedAtByLeague(int $leagueId): ?string
+    {
+        $createdAt = PriceCheck::query()
+            ->where('poe_league_id', $leagueId)
+            ->max('created_at');
+
+        return $createdAt === null ? null : (string) $createdAt;
+    }
+
+    #[\Override]
     public function findLatestIdByLeague(int $leagueId): ?int
     {
         $id = PriceCheck::query()

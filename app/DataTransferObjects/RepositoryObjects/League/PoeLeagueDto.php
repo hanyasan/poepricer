@@ -8,6 +8,7 @@ final readonly class PoeLeagueDto
         public int $id,
         public string $league_name,
         public string $ninja_league_id,
+        public string $slug,
         public bool $is_active,
         public int $poe_version_id,
     ) {}

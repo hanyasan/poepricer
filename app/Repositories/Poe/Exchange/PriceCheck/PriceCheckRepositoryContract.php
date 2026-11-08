@@ -62,6 +62,11 @@ interface PriceCheckRepositoryContract
     public function findLatestIdByLeague(int $leagueId): ?int;
 
     /**
+     * Creation moment of the latest price check of the league, null when it has none.
+     */
+    public function findLatestCreatedAtByLeague(int $leagueId): ?string;
+
+    /**
      * Prices of the items of the price check measured in each currency of the core
      * types, keyed by the exchange item id of the currency. The currency itself and
      * items with a non-positive price or core rate are left out.

@@ -1,10 +1,17 @@
 <?php
 
+use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
 use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
+use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
+use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
+use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
+use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueUnusualMoveDto;
+use App\Enums\MetricPeriodEnum;
 use Illuminate\Support\Str;
 
 return [
@@ -142,6 +149,13 @@ return [
         MainPoeLeagueDto::class,
         ExchangeMarketMetricDto::class,
         PriceCheckDto::class,
+        PoeLeagueDto::class,
+        ExchangeItemDto::class,
+        ExchangeMetricsItemDto::class,
+        LeagueOverviewDto::class,
+        LeagueItemMoveDto::class,
+        LeagueUnusualMoveDto::class,
+        MetricPeriodEnum::class,
     ],
 
 ];

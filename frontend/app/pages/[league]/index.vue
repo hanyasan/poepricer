@@ -1,6 +1,94 @@
+<script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+import type { UnusualMove } from '~/types/metrics'
+
+const route = useRoute()
+
+const slug = computed(() => route.params.league as string)
+const { currencyName } = storeToRefs(useFiltersStore())
+const { data: overview, status, refresh } = await useLeagueOverview(slug)
+
+const columns: TableColumn<UnusualMove>[] = [
+  { accessorKey: 'name', header: 'Предмет' },
+  { accessorKey: 'price', header: 'Цена' },
+  { accessorKey: 'logReturn', header: 'За 12ч' },
+  { accessorKey: 'residual', header: 'Остаток' },
+  { accessorKey: 'ratio', header: 'Остаток / MAD' },
+  { accessorKey: 'beta', header: 'β' },
+  { accessorKey: 'observations', header: 'Наблюдений' },
+]
+</script>
+
 <template>
-  <div class="space-y-2">
-    <h2 class="text-lg font-medium">Обзор лиги</h2>
-    <p class="text-muted">KPI рынка, необычные движения, топ роста и падения. Появится вместе с API.</p>
+  <div class="space-y-6">
+    <UAlert
+      v-if="status === 'error'"
+      color="error"
+      variant="subtle"
+      icon="i-lucide-triangle-alert"
+      title="Не удалось загрузить обзор лиги"
+      :actions="[{ label: 'Повторить', onClick: () => refresh() }]"
+    />
+
+    <div v-else-if="!overview" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <USkeleton v-for="index in 4" :key="index" class="h-24" />
+    </div>
+
+    <p v-else-if="overview.currency === null" class="text-muted">Для этой лиги не настроены валюты метрик.</p>
+
+    <template v-else>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label="Доходность рынка, 12ч">
+          <span v-if="overview.kpi.marketReturn12h !== null" :class="returnClass(overview.kpi.marketReturn12h)">
+            {{ formatReturn(overview.kpi.marketReturn12h) }}
+          </span>
+          <span v-else class="text-muted">—</span>
+        </KpiTile>
+        <KpiTile label="Доходность рынка, 7д">
+          <span v-if="overview.kpi.marketReturn7d !== null" :class="returnClass(overview.kpi.marketReturn7d)">
+            {{ formatReturn(overview.kpi.marketReturn7d) }}
+          </span>
+          <span v-else class="text-muted">—</span>
+        </KpiTile>
+        <KpiTile label="В корзине">{{ overview.kpi.basketSize }}</KpiTile>
+        <KpiTile label="Обновлено"><LocalDateTime :value="overview.kpi.lastSnapshotAt" empty="нет снимков" /></KpiTile>
+      </div>
+
+      <p v-if="overview.lastBucket === null" class="text-muted">Метрики для этой валюты ещё не рассчитаны.</p>
+
+      <template v-else>
+        <section class="space-y-3">
+          <h2 class="text-lg font-medium">Доходность рынка</h2>
+          <LineChart :points="overview.marketReturnSeries" />
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-medium">Необычные движения</h2>
+          <p class="text-sm text-muted">
+            Предметы, чей остаток за последние 12ч больше двух своих residual_mad. Цены в {{ currencyName }}.
+          </p>
+          <p v-if="overview.unusualMoves.length === 0" class="text-muted">Сейчас таких предметов нет.</p>
+          <UTable v-else :data="overview.unusualMoves" :columns="columns">
+            <template #name-cell="{ row }">
+              <NuxtLink :to="`/${slug}/items/${row.original.slug}`" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
+            </template>
+            <template #price-cell="{ row }">{{ formatPrice(row.original.price) }}</template>
+            <template #logReturn-cell="{ row }">
+              <span :class="returnClass(row.original.logReturn)">{{ formatReturn(row.original.logReturn) }}</span>
+            </template>
+            <template #residual-cell="{ row }">
+              <span :class="returnClass(row.original.residual)">{{ formatReturn(row.original.residual) }}</span>
+            </template>
+            <template #ratio-cell="{ row }">{{ row.original.ratio.toFixed(1) }}×</template>
+            <template #beta-cell="{ row }">{{ row.original.beta.toFixed(2) }}</template>
+          </UTable>
+        </section>
+
+        <section class="grid gap-4 lg:grid-cols-2">
+          <ItemMoveList title="Топ роста за 12ч" :moves="overview.topGainers" :league-slug="slug" />
+          <ItemMoveList title="Топ падения за 12ч" :moves="overview.topLosers" :league-slug="slug" />
+        </section>
+      </template>
+    </template>
   </div>
 </template>

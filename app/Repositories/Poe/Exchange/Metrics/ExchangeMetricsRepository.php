@@ -2,16 +2,24 @@
 
 namespace App\Repositories\Poe\Exchange\Metrics;
 
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemMetricDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\Models\Poe\Exchange\Metrics\ExchangeItemBeta;
 use App\Models\Poe\Exchange\Metrics\ExchangeItemMetric;
 use App\Models\Poe\Exchange\Metrics\ExchangeMarketMetric;
+use App\Utility\Mapper\MapperServiceContract;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ExchangeMetricsRepository implements ExchangeMetricsRepositoryContract
 {
     private const int UPSERT_CHUNK_SIZE = 1000;
+
+    public function __construct(
+        private MapperServiceContract $mapper,
+    ) {}
 
     /**
      * @return array<int, int>
@@ -74,11 +82,12 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
      * @return array<int, float>
      */
     #[\Override]
-    public function getLatestBetas(int $metricsItemId, CarbonImmutable $asOf): array
+    public function getLatestBetas(int $metricsItemId, CarbonImmutable $asOf, array $itemIds = []): array
     {
         $latest = ExchangeItemBeta::query()
             ->where('exchange_metrics_item_id', $metricsItemId)
             ->where('calculated_at', '<=', $this->timestamp($asOf))
+            ->when($itemIds !== [], static fn (Builder $query) => $query->whereIn('exchange_item_id', $itemIds))
             ->groupBy('exchange_item_id')
             ->select([
                 'exchange_item_id',
@@ -162,6 +171,89 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
         return $pairs;
     }
 
+    #[\Override]
+    public function findLatestMarketMetric(int $metricsItemId): ?ExchangeMarketMetricDto
+    {
+        $metric = ExchangeMarketMetric::query()
+            ->where('exchange_metrics_item_id', $metricsItemId)
+            ->orderByDesc('bucket_start')
+            ->first();
+
+        if ($metric === null) {
+            return null;
+        }
+
+        /** @var ExchangeMarketMetricDto $dto */
+        $dto = $this->mapper->mapEloquentModel(ExchangeMarketMetricDto::class, $metric);
+
+        return $dto;
+    }
+
+    /**
+     * @return ExchangeMarketMetricDto[]
+     */
+    #[\Override]
+    public function getMarketSeries(int $metricsItemId, ?CarbonImmutable $after): array
+    {
+        $query = ExchangeMarketMetric::query()
+            ->where('exchange_metrics_item_id', $metricsItemId)
+            ->orderBy('bucket_start');
+
+        if ($after !== null) {
+            $query->where('bucket_start', '>', $this->timestamp($after));
+        }
+
+        return $this->mapper->mapEloquentCollection(ExchangeMarketMetricDto::class, $query->get());
+    }
+
+    /**
+     * @return ExchangeItemMetricDto[]
+     */
+    #[\Override]
+    public function getTopGainers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array
+    {
+        return $this->mapItemMetrics(
+            $this->bucketItemMetrics($metricsItemId, $bucketStart)
+                ->where('log_return', '>', 0)
+                ->orderByDesc('log_return')
+                ->limit($limit),
+        );
+    }
+
+    /**
+     * @return ExchangeItemMetricDto[]
+     */
+    #[\Override]
+    public function getTopLosers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array
+    {
+        return $this->mapItemMetrics(
+            $this->bucketItemMetrics($metricsItemId, $bucketStart)
+                ->where('log_return', '<', 0)
+                ->orderBy('log_return')
+                ->limit($limit),
+        );
+    }
+
+    /**
+     * @return ExchangeItemMetricDto[]
+     */
+    #[\Override]
+    public function getUnusualMoves(
+        int $metricsItemId,
+        CarbonImmutable $bucketStart,
+        float $multiplier,
+        int $limit,
+    ): array {
+        return $this->mapItemMetrics(
+            $this->bucketItemMetrics($metricsItemId, $bucketStart)
+                ->whereNotNull('residual')
+                ->where('residual_mad', '>', 0)
+                ->whereRaw('ABS(residual) > ? * residual_mad', [$multiplier])
+                ->orderByRaw('ABS(residual) / residual_mad DESC')
+                ->limit($limit),
+        );
+    }
+
     /**
      * @param  array<int, array{
      *     exchange_item_id: int,
@@ -183,6 +275,26 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
                 ['beta', 'raw_beta', 'r_squared', 'observations'],
             );
         }
+    }
+
+    /**
+     * @return Builder<ExchangeItemMetric>
+     */
+    private function bucketItemMetrics(int $metricsItemId, CarbonImmutable $bucketStart): Builder
+    {
+        return ExchangeItemMetric::query()
+            ->with('exchangeItem')
+            ->where('exchange_metrics_item_id', $metricsItemId)
+            ->where('bucket_start', $this->timestamp($bucketStart));
+    }
+
+    /**
+     * @param  Builder<ExchangeItemMetric>  $query
+     * @return ExchangeItemMetricDto[]
+     */
+    private function mapItemMetrics(Builder $query): array
+    {
+        return $this->mapper->mapEloquentCollection(ExchangeItemMetricDto::class, $query->get());
     }
 
     private function timestamp(CarbonImmutable $moment): string

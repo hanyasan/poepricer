@@ -6,10 +6,12 @@ use App\DataTransferObjects\ServiceObjects\ExchangeMetricsMixResultDto;
 use App\DataTransferObjects\ServiceObjects\ExchangeMetricsSeedResultDto;
 use App\Enums\ExchangeMetricsMixStatusEnum;
 use App\Enums\ExchangeMetricsSeedStatusEnum;
+use App\Enums\Tags\MetricsItemTagEnum;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Utility\Statistics\RobustStatistics;
+use Illuminate\Support\Facades\Cache;
 
 final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsItemSeedServiceContract
 {
@@ -59,6 +61,7 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
         }
 
         $this->metricsItemRepository->insertMany($rows);
+        $this->flushLeagueMetricsItems($leagueId);
 
         return new ExchangeMetricsSeedResultDto(ExchangeMetricsSeedStatusEnum::Seeded, $items);
     }
@@ -105,6 +108,7 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
             'exchange_item_id' => $item->id,
             'min_price' => $minPrice,
         ]]);
+        $this->flushLeagueMetricsItems($leagueId);
 
         return new ExchangeMetricsMixResultDto(
             ExchangeMetricsMixStatusEnum::Added,
@@ -112,5 +116,10 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
             $minPrice,
             count($prices),
         );
+    }
+
+    private function flushLeagueMetricsItems(int $leagueId): void
+    {
+        Cache::tags([MetricsItemTagEnum::metrics_items_league_id->name.$leagueId])->flush();
     }
 }

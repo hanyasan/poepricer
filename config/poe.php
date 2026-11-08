@@ -16,6 +16,11 @@ return [
         'min_beta_observations' => (int) env('METRICS_MIN_BETA_OBSERVATIONS', 6),
         'beta_prior_weight' => (int) env('METRICS_BETA_PRIOR_WEIGHT', 14),
     ],
+    'overview' => [
+        'top_limit' => (int) env('OVERVIEW_TOP_LIMIT', 10),
+        'unusual_limit' => (int) env('OVERVIEW_UNUSUAL_LIMIT', 20),
+        'unusual_residual_multiplier' => (float) env('OVERVIEW_UNUSUAL_RESIDUAL_MULTIPLIER', 2.0),
+    ],
     'compact' => [
         'days_stay' => (int) env('COMPACT_DAYS_STAY', 9),
     ],

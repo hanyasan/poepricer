@@ -15,15 +15,6 @@ function lastReturn(league: League): number | null {
   const series = league.marketReturnSeries
   return series.length > 0 ? series[series.length - 1]!.value : null
 }
-
-function formatReturn(value: number): string {
-  return `${value > 0 ? '+' : ''}${(value * 100).toFixed(2)}%`
-}
-
-function returnClass(value: number): string {
-  if (value > 0) return 'text-success'
-  return value < 0 ? 'text-error' : 'text-muted'
-}
 </script>
 
 <template>

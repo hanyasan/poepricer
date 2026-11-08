@@ -2,6 +2,8 @@
 
 namespace App\Repositories\Poe\Exchange\Metrics;
 
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemMetricDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use Carbon\CarbonImmutable;
 
 interface ExchangeMetricsRepositoryContract
@@ -39,11 +41,13 @@ interface ExchangeMetricsRepositoryContract
     public function upsertMarketMetric(array $row): void;
 
     /**
-     * Latest beta of every item calculated at or before the moment.
+     * Latest beta of every item calculated at or before the moment. Only the given
+     * items are returned when the list is not empty.
      *
+     * @param  array<int, int>  $itemIds
      * @return array<int, float>
      */
-    public function getLatestBetas(int $metricsItemId, CarbonImmutable $asOf): array;
+    public function getLatestBetas(int $metricsItemId, CarbonImmutable $asOf, array $itemIds = []): array;
 
     /**
      * Residuals of the items for the buckets in [from, to), oldest first.
@@ -58,6 +62,43 @@ interface ExchangeMetricsRepositoryContract
      * @return array<int, array<int, array{market: float, item: float}>>
      */
     public function getReturnPairs(int $metricsItemId, CarbonImmutable $from, CarbonImmutable $to): array;
+
+    public function findLatestMarketMetric(int $metricsItemId): ?ExchangeMarketMetricDto;
+
+    /**
+     * Market metrics of the buckets after the moment, oldest first. All buckets when
+     * the moment is null.
+     *
+     * @return ExchangeMarketMetricDto[]
+     */
+    public function getMarketSeries(int $metricsItemId, ?CarbonImmutable $after): array;
+
+    /**
+     * Items of the bucket that grew the most, by log return, best first.
+     *
+     * @return ExchangeItemMetricDto[]
+     */
+    public function getTopGainers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array;
+
+    /**
+     * Items of the bucket that fell the most, by log return, worst first.
+     *
+     * @return ExchangeItemMetricDto[]
+     */
+    public function getTopLosers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array;
+
+    /**
+     * Items of the bucket whose absolute residual exceeds the residual MAD by the
+     * multiplier, the largest ratio first.
+     *
+     * @return ExchangeItemMetricDto[]
+     */
+    public function getUnusualMoves(
+        int $metricsItemId,
+        CarbonImmutable $bucketStart,
+        float $multiplier,
+        int $limit,
+    ): array;
 
     /**
      * @param  array<int, array{

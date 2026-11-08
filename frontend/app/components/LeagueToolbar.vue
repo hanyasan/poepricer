@@ -1,30 +1,27 @@
 <script setup lang="ts">
-import type { Game, MetricPeriod } from '~/types/metrics'
-import { currenciesByGame } from '~/stores/filters'
-
-const props = defineProps<{ game: Game }>()
+import type { MetricPeriod } from '~/types/metrics'
 
 const filters = useFiltersStore()
-const { currency, period } = storeToRefs(filters)
+const { currencies, currency, period } = storeToRefs(filters)
 
-const currencyItems = computed(() => currenciesByGame[props.game].map((value) => ({ label: value, value })))
+const currencyItems = computed(() => currencies.value.map((item) => ({ label: item.name, value: item.slug })))
 
 const periodItems: { label: string; value: MetricPeriod }[] = [
   { label: '24 часа', value: '24h' },
   { label: '7 дней', value: '7d' },
   { label: 'Вся лига', value: 'league' },
 ]
-
-watchEffect(() => {
-  if (!currenciesByGame[props.game].includes(currency.value)) {
-    currency.value = currenciesByGame[props.game][0] ?? 'divine'
-  }
-})
 </script>
 
 <template>
   <div class="flex flex-wrap gap-3">
-    <USelect v-model="currency" :items="currencyItems" class="w-36" />
+    <USelect
+      v-if="currencyItems.length > 0"
+      :model-value="currency ?? undefined"
+      :items="currencyItems"
+      class="w-48"
+      @update:model-value="currency = $event"
+    />
     <USelect v-model="period" :items="periodItems" class="w-36" />
   </div>
 </template>

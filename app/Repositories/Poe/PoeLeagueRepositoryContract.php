@@ -46,6 +46,8 @@ interface PoeLeagueRepositoryContract
      */
     public function find(int $id): PoeLeagueDto;
 
+    public function findActiveBySlug(string $slug): ?PoeLeagueDto;
+
     /**
      * @param  array<int, array{
      *     league_name: string,
