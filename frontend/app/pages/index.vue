@@ -14,6 +14,10 @@ useSeoMeta({
   ogDescription: () => t('seo.home.description'),
 })
 
+useHead({
+  meta: [{ name: 'yandex-verification', content: 'ebe900b0f0c3f0e7' }],
+})
+
 const groups = computed(() =>
   GAMES.map((game) => ({ game, title: gameTitle(game), leagues: leagues.value.filter((league) => league.game === game) }))
     .filter((group) => group.leagues.length > 0),
