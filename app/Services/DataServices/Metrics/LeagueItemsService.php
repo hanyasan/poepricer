@@ -15,6 +15,7 @@ use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
+use App\Utility\Metrics\ItemMetricFlags;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 
@@ -25,6 +26,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
         private ExchangeMetricsRepositoryContract $metricsRepository,
         private ExchangeItemRepositoryContract $itemRepository,
         private ExchangeItemTableRepositoryContract $itemTableRepository,
+        private ItemMetricFlags $flags,
     ) {}
 
     #[\Override]
@@ -114,18 +116,10 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
             observations: $observations,
             units: $row->units,
             returnWeight: $row->return_weight,
-            lowData: $observations < (int) config('poe.metrics.items_table_min_observations'),
-            isUnusual: $this->isUnusual($row->residual, $row->residual_mad),
+            lowData: $this->flags->isLowData($observations),
+            isUnusual: $this->flags->isUnusual($row->residual, $row->residual_mad),
             sparkline: $sparkline,
         );
-    }
-
-    private function isUnusual(?float $residual, ?float $residualMad): bool
-    {
-        return $residual !== null
-            && $residualMad !== null
-            && $residualMad > 0
-            && abs($residual) > (float) config('poe.overview.unusual_residual_multiplier') * $residualMad;
     }
 
     private function lastPage(int $total, PaginationDto $pagination): int

@@ -111,3 +111,82 @@ export interface LeagueOverview {
   topGainers: ItemMove[]
   topLosers: ItemMove[]
 }
+
+/** Description of an item on its page, see `.claude-spec/api-item-detail.md`. */
+export interface ItemInfo {
+  slug: string
+  name: string
+  category: string | null
+}
+
+/** Metrics of an item in the last bucket. */
+export interface ItemCurrent {
+  price: number
+  logReturn: number | null
+  residual: number | null
+  residualMad: number | null
+  observations: number
+  units: number | null
+  returnWeight: number | null
+  lowData: boolean
+  isUnusual: boolean
+}
+
+/** One recalculation of the beta of an item. */
+export interface ItemBeta {
+  calculatedAt: string
+  beta: number
+  rawBeta: number
+  rSquared: number | null
+  observations: number
+}
+
+export interface ItemSummary {
+  item: ItemInfo
+  /** `null` when the league has no metric currencies. */
+  currency: string | null
+  lastBucket: string | null
+  /** `null` when the item has no metrics in the last bucket. */
+  current: ItemCurrent | null
+  /** `null` when the beta was never calculated. */
+  beta: ItemBeta | null
+}
+
+/** A point of the item charts. */
+export interface ItemSeriesPoint {
+  bucket: string
+  price: number
+  residual: number | null
+  residualMad: number | null
+}
+
+export interface ItemHistory {
+  currency: string | null
+  period: MetricPeriod
+  lastBucket: string | null
+  series: ItemSeriesPoint[]
+  /** Recalculations of the beta within the period, oldest first. */
+  betaHistory: ItemBeta[]
+}
+
+/** A row of the table of the item values by bucket. */
+export interface ItemBucketRow {
+  bucket: string
+  price: number
+  logReturn: number | null
+  residual: number | null
+  residualMad: number | null
+  observations: number
+  units: number | null
+  returnWeight: number | null
+}
+
+export interface ItemBucketsMeta extends PaginatedMeta {
+  currency: string | null
+  period: MetricPeriod
+}
+
+export interface ItemBucketsPage {
+  data: ItemBucketRow[]
+  meta: ItemBucketsMeta
+}

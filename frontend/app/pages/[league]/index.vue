@@ -67,11 +67,14 @@ const columns: TableColumn<UnusualMove>[] = [
         </section>
 
         <section class="space-y-3">
-          <h2 class="text-lg font-medium">Необычные движения</h2>
-          <p class="text-sm text-muted">
-            Предметы, чей остаток в последней корзине больше двух обычных для них колебаний. Цены в {{ currencyName }}.
-            Серым выделено число сделок у предметов с малым объёмом: их доходности менее надёжны.
-          </p>
+          <h2 class="flex items-center gap-1.5 text-lg font-medium">
+            Необычные движения
+            <InfoTooltip label="Что такое необычные движения">
+              <p>Предметы, чей остаток в последней корзине больше двух обычных для них колебаний</p>
+              <p>Цены в {{ currencyName }}</p>
+              <p>Серым выделено число сделок у предметов с малым объёмом: их доходности менее надёжны</p>
+            </InfoTooltip>
+          </h2>
           <p v-if="overview.unusualMoves.length === 0" class="text-muted">Сейчас таких предметов нет.</p>
           <UTable v-else :data="overview.unusualMoves" :columns="columns" :ui="{ th: 'align-bottom' }">
             <template #name-cell="{ row }">

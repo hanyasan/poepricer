@@ -13,6 +13,8 @@ export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: false },
   modules: ['@nuxt/ui', '@pinia/nuxt'],
+  // The dark theme is the default until the visitor picks another one.
+  colorMode: { preference: 'dark', fallback: 'dark' },
   css: ['~/assets/css/main.css'],
   icon: {
     // Outside /api, which is proxied to Laravel.

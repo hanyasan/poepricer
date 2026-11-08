@@ -1,6 +1,7 @@
 <?php
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemBetaDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
@@ -8,6 +9,9 @@ use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
+use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemCurrentDto;
+use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemInfoDto;
+use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemSummaryDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
@@ -157,6 +161,10 @@ return [
         LeagueItemMoveDto::class,
         LeagueUnusualMoveDto::class,
         LeagueItemCategoriesDto::class,
+        ItemSummaryDto::class,
+        ItemInfoDto::class,
+        ItemCurrentDto::class,
+        ExchangeItemBetaDto::class,
         MetricPeriodEnum::class,
     ],
 

@@ -1,3 +1,4 @@
+const bucketFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 const priceFormatter = new Intl.NumberFormat('ru-RU', { maximumSignificantDigits: 4 })
 
 /** A log return as a signed percent: 0.0132 becomes "+1.32%". */
@@ -33,4 +34,9 @@ export function formatPercent(value: number): string {
 /** A value that may be missing, shown as a dash. */
 export function orDash<T>(value: T | null, format: (value: T) => string): string {
   return value === null ? '—' : format(value)
+}
+
+/** A bucket or beta moment as a short label of a chart axis. */
+export function formatBucketLabel(moment: string): string {
+  return bucketFormatter.format(new Date(moment))
 }

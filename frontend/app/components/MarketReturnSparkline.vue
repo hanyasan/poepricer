@@ -10,6 +10,8 @@ use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ points: SeriesPoint[] }>()
 
+const { colors, symbolSize, marker } = useChartTheme()
+
 const formatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 const option = computed(() => ({
@@ -29,10 +31,12 @@ const option = computed(() => ({
     {
       type: 'line',
       showSymbol: props.points.length === 1,
-      symbolSize: 6,
+      symbol: 'circle',
+      symbolSize,
       smooth: false,
-      lineStyle: { width: 1.5 },
-      areaStyle: { opacity: 0.08 },
+      lineStyle: { width: 1.5, color: colors.primary },
+      itemStyle: marker(colors.primary),
+      areaStyle: { color: colors.primary, opacity: 0.08 },
       data: props.points.map((point) => point.value),
     },
   ],

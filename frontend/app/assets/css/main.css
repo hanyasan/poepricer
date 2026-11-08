@@ -6,6 +6,17 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
 }
 
+/* The default green of the dark theme is too bright for the eyes. */
+html.dark {
+  --ui-success: var(--ui-color-success-600);
+}
+
+/* A darker blue than the default shades of the primary color, on both themes. */
+html:root,
+html.dark {
+  --ui-primary: var(--ui-color-primary-600);
+}
+
 @layer base {
   html {
     font-size: 106.25%;

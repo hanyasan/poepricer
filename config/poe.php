@@ -27,6 +27,8 @@ return [
     'items' => [
         'per_page' => (int) env('ITEMS_PER_PAGE', 50),
         'max_per_page' => (int) env('ITEMS_MAX_PER_PAGE', 100),
+        'buckets_per_page' => (int) env('ITEM_BUCKETS_PER_PAGE', 28),
+        'buckets_max_per_page' => (int) env('ITEM_BUCKETS_MAX_PER_PAGE', 100),
     ],
     'compact' => [
         'days_stay' => (int) env('COMPACT_DAYS_STAY', 9),

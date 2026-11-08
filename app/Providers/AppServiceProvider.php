@@ -8,6 +8,8 @@ use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepository;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepositoryContract;
+use App\Repositories\Poe\Exchange\Metrics\ExchangeItemDetailRepository;
+use App\Repositories\Poe\Exchange\Metrics\ExchangeItemDetailRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepository;
@@ -24,6 +26,8 @@ use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedService;
 use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedServiceContract;
 use App\Services\DataServices\Metrics\ExchangeMetricsService;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
+use App\Services\DataServices\Metrics\LeagueItemDetailService;
+use App\Services\DataServices\Metrics\LeagueItemDetailServiceContract;
 use App\Services\DataServices\Metrics\LeagueItemsService;
 use App\Services\DataServices\Metrics\LeagueItemsServiceContract;
 use App\Services\DataServices\Metrics\LeagueMetricsLookupService;
@@ -69,6 +73,8 @@ final class AppServiceProvider extends ServiceProvider
         LeagueOverviewServiceContract::class => LeagueOverviewService::class,
         ExchangeItemTableRepositoryContract::class => ExchangeItemTableRepository::class,
         LeagueItemsServiceContract::class => LeagueItemsService::class,
+        ExchangeItemDetailRepositoryContract::class => ExchangeItemDetailRepository::class,
+        LeagueItemDetailServiceContract::class => LeagueItemDetailService::class,
         LeagueMetricsLookupServiceContract::class => LeagueMetricsLookupService::class,
     ];
 

@@ -10,11 +10,7 @@ use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ points: SeriesPoint[] }>()
 
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-
-function formatBucket(bucket: string): string {
-  return dateFormatter.format(new Date(bucket))
-}
+const { colors, symbolSize, xAxisLine, gridLine, marker } = useChartTheme()
 
 const option = computed(() => ({
   animation: false,
@@ -25,15 +21,27 @@ const option = computed(() => ({
   grid: { left: 56, right: 16, top: 16, bottom: 28 },
   xAxis: {
     type: 'category',
-    data: props.points.map((point) => formatBucket(point.bucket)),
+    data: props.points.map((point) => formatBucketLabel(point.bucket)),
+    axisLine: xAxisLine.value,
     axisLabel: { hideOverlap: true },
   },
   yAxis: {
     type: 'value',
     scale: true,
+    splitLine: gridLine.value,
     axisLabel: { formatter: (value: number) => `${(value * 100).toFixed(1)}%` },
   },
-  series: [{ type: 'line', showSymbol: props.points.length < 40, data: props.points.map((point) => point.value) }],
+  series: [
+    {
+      type: 'line',
+      showSymbol: props.points.length < 40,
+      symbol: 'circle',
+      symbolSize,
+      lineStyle: { color: colors.primary },
+      itemStyle: marker(colors.primary),
+      data: props.points.map((point) => point.value),
+    },
+  ],
 }))
 </script>
 
