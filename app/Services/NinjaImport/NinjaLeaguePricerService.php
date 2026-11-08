@@ -11,10 +11,14 @@ use Illuminate\Support\Facades\Log;
 
 final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServiceContract
 {
+    private int $executionLag;
+
     public function __construct(
         private NinjaImportServiceContract $importService,
         private PoeLeagueRepositoryContract $leagueRepository,
-    ) {}
+    ) {
+        $this->executionLag = config('poe.price_check.job_execution_lag');
+    }
 
     #[\Override]
     public function importPickedForVersion(PoeVersionDto $version): void
@@ -50,6 +54,8 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
                 if ($minutesCheck === null) {
                     return false;
                 }
+
+                $minutesCheck -= $this->executionLag;
 
                 return is_null($latestCheck) || CarbonImmutable::now()->greaterThanOrEqualTo(
                     CarbonImmutable::parse($latestCheck)->addMinutes($minutesCheck)

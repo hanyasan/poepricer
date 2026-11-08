@@ -8,6 +8,7 @@ return [
     ],
     'price_check' => [
         'default_hours_check_rule' => (int) env('PRICE_CHECK_DEFAULT_HOURS_CHECK', 5),
+        'job_execution_lag' => (int) env('JOB_EXECUTION_LAG', 4),
     ],
     'metrics' => [
         'bucket_hours' => (int) env('METRICS_BUCKET_HOURS', 12),
