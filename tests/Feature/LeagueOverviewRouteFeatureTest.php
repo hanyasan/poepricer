@@ -80,7 +80,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         $this->assertSame('7d', $json['period']);
         $this->assertSame('2030-01-10T12:00:00+00:00', $json['lastBucket']);
         $this->assertSame(
-            ['marketReturn12h' => -0.0048, 'marketReturn7d' => 0.0052, 'basketSize' => 42, 'lastSnapshotAt' => '2030-01-10T12:10:00+00:00'],
+            ['marketReturn12h' => -0.0048, 'marketReturn7d' => 0.0052, 'basketSize' => 42, 'basketTotal' => 42, 'lastSnapshotAt' => '2030-01-10T12:10:00+00:00'],
             [...$json['kpi'], 'marketReturn7d' => round($json['kpi']['marketReturn7d'], 6)],
         );
         $this->assertSame(
@@ -167,7 +167,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         $this->assertEqualsWithDelta(-5.0, $moves[0]['ratio'], 1e-9);
         $this->assertSame(10, $moves[0]['observations']);
         $this->assertSame(
-            ['slug', 'name', 'price', 'logReturn', 'residual', 'residualMad', 'ratio', 'beta', 'observations'],
+            ['slug', 'name', 'price', 'logReturn', 'residual', 'residualMad', 'ratio', 'beta', 'observations', 'units', 'returnWeight'],
             array_keys($moves[0]),
         );
     }
@@ -248,7 +248,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
                 'currency' => null,
                 'period' => '7d',
                 'lastBucket' => null,
-                'kpi' => ['marketReturn12h' => null, 'marketReturn7d' => null, 'basketSize' => 0, 'lastSnapshotAt' => null],
+                'kpi' => ['marketReturn12h' => null, 'marketReturn7d' => null, 'basketSize' => 0, 'basketTotal' => 0, 'lastSnapshotAt' => null],
                 'marketReturnSeries' => [],
                 'unusualMoves' => [],
                 'topGainers' => [],
@@ -267,6 +267,47 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         $this->assertNull($json['lastBucket']);
         $this->assertSame([], $json['marketReturnSeries']);
         $this->assertSame(0, $json['kpi']['basketSize']);
+        $this->assertSame(0, $json['kpi']['basketTotal']);
+    }
+
+    public function test_the_basket_total_is_reported_next_to_the_reliable_basket_size(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBuckets('Overview Basket League', [[self::LAST_BUCKET, 0.0, 5]]);
+        ExchangeMarketMetric::query()->where('exchange_metrics_item_id', $metricsItem->id)->update(['basket_total' => 50]);
+
+        $kpi = $this->getJson("/api/leagues/{$league->slug}/overview")->assertOk()->json('kpi');
+
+        $this->assertSame(5, $kpi['basketSize']);
+        $this->assertSame(50, $kpi['basketTotal']);
+    }
+
+    public function test_tops_leave_out_returns_of_thinly_traded_items(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBuckets('Overview Weight Tops League', [[self::LAST_BUCKET, 0.0, 5]]);
+        $this->itemMetric($league, $metricsItem, 'thin-up', self::LAST_BUCKET, 0.9, returnWeight: 0.0);
+        $this->itemMetric($league, $metricsItem, 'thin-down', self::LAST_BUCKET, -0.9, returnWeight: 0.0);
+        $this->itemMetric($league, $metricsItem, 'partial-up', self::LAST_BUCKET, 0.1, returnWeight: 0.3);
+        $this->itemMetric($league, $metricsItem, 'unknown-down', self::LAST_BUCKET, -0.1, returnWeight: null);
+
+        $json = $this->getJson("/api/leagues/{$league->slug}/overview")->assertOk()->json();
+
+        $this->assertSame(['partial-up'], array_column($json['topGainers'], 'slug'));
+        $this->assertSame(['unknown-down'], array_column($json['topLosers'], 'slug'));
+    }
+
+    public function test_unusual_moves_carry_the_traded_units_and_the_return_weight(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBuckets('Overview Units League', [[self::LAST_BUCKET, 0.0, 5]]);
+        $this->itemMetric($league, $metricsItem, 'known', self::LAST_BUCKET, 0.05, 0.05, 0.01, 14, units: 12.5, returnWeight: 0.5);
+        $this->itemMetric($league, $metricsItem, 'unknown', self::LAST_BUCKET, 0.04, 0.04, 0.01, 14);
+
+        $moves = $this->getJson("/api/leagues/{$league->slug}/overview")->assertOk()->json('unusualMoves');
+        $bySlug = array_column($moves, null, 'slug');
+
+        $this->assertSame(12.5, $bySlug['known']['units']);
+        $this->assertSame(0.5, $bySlug['known']['returnWeight']);
+        $this->assertNull($bySlug['unknown']['units']);
+        $this->assertNull($bySlug['unknown']['returnWeight']);
     }
 
     public function test_the_overview_is_cached_between_requests(): void
@@ -405,6 +446,8 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         ?float $residual = null,
         ?float $residualMad = null,
         int $observations = 0,
+        ?float $units = null,
+        ?float $returnWeight = null,
     ): ExchangeItemMetric {
         $item = ExchangeItem::query()
             ->where('poe_league_id', $league->id)
@@ -419,6 +462,8 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
                 'residual' => $residual,
                 'residual_mad' => $residualMad,
                 'observations' => $observations,
+                'units' => $units,
+                'return_weight' => $returnWeight,
             ])
             ->create();
     }

@@ -12,9 +12,14 @@ const columns: TableColumn<ItemMetricRow>[] = [
   { accessorKey: 'residualMad', header: 'residual_mad' },
   { accessorKey: 'beta', header: 'β' },
   { accessorKey: 'observations', header: 'observations' },
+  { accessorKey: 'units', header: 'Сделок/ч' },
 ]
 </script>
 
 <template>
-  <UTable :data="items" :columns="columns" />
+  <UTable :data="items" :columns="columns">
+    <template #units-cell="{ row }">
+      <span :class="weightClass(row.original.returnWeight)">{{ formatUnits(row.original.units) }}</span>
+    </template>
+  </UTable>
 </template>

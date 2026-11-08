@@ -41,10 +41,19 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
             'residual' => null,
             'residual_mad' => null,
             'observations' => 0,
+            'units' => null,
+            'return_weight' => null,
         ];
 
         $this->repository()->upsertItemMetrics([$row]);
-        $this->repository()->upsertItemMetrics([[...$row, 'price' => 3.0, 'log_return' => 0.5, 'observations' => 2]]);
+        $this->repository()->upsertItemMetrics([[
+            ...$row,
+            'price' => 3.0,
+            'log_return' => 0.5,
+            'observations' => 2,
+            'units' => 12.5,
+            'return_weight' => 0.5,
+        ]]);
 
         $stored = ExchangeItemMetric::query()->where('exchange_item_id', $item->id)->get();
 
@@ -52,6 +61,8 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
         $this->assertSame(3.0, $stored[0]->price);
         $this->assertSame(0.5, $stored[0]->log_return);
         $this->assertSame(2, $stored[0]->observations);
+        $this->assertSame(12.5, $stored[0]->units);
+        $this->assertSame(0.5, $stored[0]->return_weight);
     }
 
     public function test_upsert_item_metrics_with_no_rows_stores_nothing(): void
@@ -72,16 +83,18 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
             'bucket_start' => '2030-01-01 00:00:00+00:00',
             'market_return' => 0.1,
             'basket_size' => 3,
+            'basket_total' => 7,
         ];
 
         $this->repository()->upsertMarketMetric($row);
-        $this->repository()->upsertMarketMetric([...$row, 'market_return' => -0.2, 'basket_size' => 4]);
+        $this->repository()->upsertMarketMetric([...$row, 'market_return' => -0.2, 'basket_size' => 4, 'basket_total' => 9]);
 
         $stored = ExchangeMarketMetric::query()->where('exchange_metrics_item_id', $metricsItem->id)->get();
 
         $this->assertCount(1, $stored);
         $this->assertSame(-0.2, $stored[0]->market_return);
         $this->assertSame(4, $stored[0]->basket_size);
+        $this->assertSame(9, $stored[0]->basket_total);
     }
 
     public function test_latest_betas_pick_the_newest_value_at_or_before_the_moment_per_item(): void
@@ -173,6 +186,27 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
         $this->assertSame([], $pairs);
     }
 
+    public function test_return_pairs_skip_returns_with_a_zero_weight_and_keep_unknown_weights(): void
+    {
+        [$metricsItem, , $item] = $this->twoMetricsItemsAndTwoItems('Pairs Weight League');
+
+        foreach (['2030-01-01 00:00:00', '2030-01-01 06:00:00', '2030-01-01 12:00:00'] as $bucket) {
+            ExchangeMarketMetric::factory()->forMetricsItem($metricsItem)->atBucket($bucket)->withReturn(0.1)->create();
+        }
+
+        $this->itemMetric($item, $metricsItem, '2030-01-01 00:00:00', logReturn: 0.1, returnWeight: 0.0);
+        $this->itemMetric($item, $metricsItem, '2030-01-01 06:00:00', logReturn: 0.2, returnWeight: 0.4);
+        $this->itemMetric($item, $metricsItem, '2030-01-01 12:00:00', logReturn: 0.3, returnWeight: null);
+
+        $pairs = $this->repository()->getReturnPairs(
+            $metricsItem->id,
+            $this->at('2030-01-01 00:00:00'),
+            $this->at('2030-01-02 00:00:00'),
+        );
+
+        $this->assertSame([$item->id => [['market' => 0.1, 'item' => 0.2], ['market' => 0.1, 'item' => 0.3]]], $pairs);
+    }
+
     public function test_upsert_betas_updates_the_same_calculation_moment(): void
     {
         [$metricsItem, , $item] = $this->twoMetricsItemsAndTwoItems('Upsert Beta League');
@@ -241,11 +275,12 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
         string $bucketStart,
         ?float $residual = null,
         ?float $logReturn = null,
+        ?float $returnWeight = null,
     ): void {
         ExchangeItemMetric::factory()
             ->forItem($item, $metricsItem)
             ->atBucket($bucketStart)
-            ->state(['residual' => $residual, 'log_return' => $logReturn])
+            ->state(['residual' => $residual, 'log_return' => $logReturn, 'return_weight' => $returnWeight])
             ->create();
     }
 }

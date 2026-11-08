@@ -126,6 +126,43 @@ class RobustStatisticsTest extends TestCase
         $this->assertNull($this->statistics()->squaredCorrelation([1.0], [1.0]));
     }
 
+    public function test_weighted_median_with_equal_weights_is_the_plain_median(): void
+    {
+        $statistics = $this->statistics();
+
+        $this->assertSame(3.0, $statistics->weightedMedian([5.0, 1.0, 3.0], [1.0, 1.0, 1.0]));
+        $this->assertSame(2.5, $statistics->weightedMedian([4.0, 1.0, 3.0, 2.0], [2.0, 2.0, 2.0, 2.0]));
+    }
+
+    public function test_weighted_median_follows_the_heavier_values(): void
+    {
+        $this->assertSame(10.0, $this->statistics()->weightedMedian([1.0, 2.0, 10.0], [1.0, 1.0, 5.0]));
+    }
+
+    public function test_weighted_median_ignores_values_with_a_zero_weight(): void
+    {
+        $this->assertSame(1.5, $this->statistics()->weightedMedian([1.0, 2.0, 100.0], [1.0, 1.0, 0.0]));
+    }
+
+    public function test_weighted_median_keeps_the_keys_of_values_and_weights_aligned(): void
+    {
+        $this->assertSame(7.0, $this->statistics()->weightedMedian([20 => 7.0, 10 => 1.0], [10 => 1.0, 20 => 3.0]));
+    }
+
+    public function test_weighted_median_without_positive_weight_is_rejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->statistics()->weightedMedian([1.0], [0.0]);
+    }
+
+    public function test_weighted_median_with_a_missing_or_negative_weight_is_rejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->statistics()->weightedMedian([1.0, 2.0], [1.0, -1.0]);
+    }
+
     private function statistics(): RobustStatistics
     {
         return new RobustStatistics;

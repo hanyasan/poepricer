@@ -24,6 +24,7 @@ final class ExchangeMarketMetricFactory extends Factory
             'bucket_start' => '2030-01-01 00:00:00',
             'market_return' => 0.0,
             'basket_size' => 1,
+            'basket_total' => static fn (array $attributes): mixed => $attributes['basket_size'],
         ];
     }
 

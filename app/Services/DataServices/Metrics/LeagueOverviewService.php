@@ -174,6 +174,7 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
             marketReturn12h: $latest->market_return,
             marketReturn7d: $this->sumReturns($this->after($series, $weekStart)),
             basketSize: $latest->basket_size,
+            basketTotal: $latest->basket_total,
             lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($leagueId),
             marketReturnSeries: $period === MetricPeriodEnum::Day
                 ? $this->after($series, $bucket->subHours(self::DAY_HOURS))
@@ -193,6 +194,7 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
             marketReturn12h: null,
             marketReturn7d: null,
             basketSize: 0,
+            basketTotal: 0,
             lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($leagueId),
         );
     }
@@ -278,6 +280,8 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
                 ratio: $metric->residual / $metric->residual_mad,
                 beta: $betas[$metric->exchange_item_id] ?? 1.0,
                 observations: $metric->observations,
+                units: $metric->units,
+                returnWeight: $metric->return_weight,
             );
         }
 

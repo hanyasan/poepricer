@@ -10,6 +10,17 @@ export function returnClass(value: number | null): string {
   return value > 0 ? 'text-success' : 'text-error'
 }
 
+/** Items traded per hour; an unknown volume is shown as a dash. */
+export function formatUnits(value: number | null): string {
+  if (value === null) return '—'
+  return value < 10 ? value.toFixed(1) : Math.round(value).toString()
+}
+
+/** Muted style for a return that is only partly trusted because the item is rarely traded. */
+export function weightClass(weight: number | null): string {
+  return weight !== null && weight < 1 ? 'text-muted' : ''
+}
+
 export function formatPrice(value: number): string {
   return priceFormatter.format(value)
 }

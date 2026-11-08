@@ -25,6 +25,8 @@ interface ExchangeMetricsRepositoryContract
      *     residual: float|null,
      *     residual_mad: float|null,
      *     observations: int,
+     *     units: float|null,
+     *     return_weight: float|null,
      * }>  $rows
      */
     public function upsertItemMetrics(array $rows): void;
@@ -36,6 +38,7 @@ interface ExchangeMetricsRepositoryContract
      *     bucket_start: string,
      *     market_return: float,
      *     basket_size: int,
+     *     basket_total: int,
      * }  $row
      */
     public function upsertMarketMetric(array $row): void;
@@ -58,6 +61,7 @@ interface ExchangeMetricsRepositoryContract
 
     /**
      * Item and market returns of every item for the buckets in [from, to), oldest first.
+     * Returns whose weight is zero are left out.
      *
      * @return array<int, array<int, array{market: float, item: float}>>
      */

@@ -45,6 +45,8 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
      *     residual: float|null,
      *     residual_mad: float|null,
      *     observations: int,
+     *     units: float|null,
+     *     return_weight: float|null,
      * }>  $rows
      */
     #[\Override]
@@ -54,7 +56,7 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
             ExchangeItemMetric::query()->upsert(
                 $chunk,
                 ['exchange_item_id', 'exchange_metrics_item_id', 'bucket_start'],
-                ['price', 'log_return', 'residual', 'residual_mad', 'observations'],
+                ['price', 'log_return', 'residual', 'residual_mad', 'observations', 'units', 'return_weight'],
             );
         }
     }
@@ -66,6 +68,7 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
      *     bucket_start: string,
      *     market_return: float,
      *     basket_size: int,
+     *     basket_total: int,
      * }  $row
      */
     #[\Override]
@@ -74,7 +77,7 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
         ExchangeMarketMetric::query()->upsert(
             [$row],
             ['exchange_metrics_item_id', 'bucket_start'],
-            ['poe_league_id', 'market_return', 'basket_size'],
+            ['poe_league_id', 'market_return', 'basket_size', 'basket_total'],
         );
     }
 
@@ -153,6 +156,10 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
             ->where('exchange_item_metrics.bucket_start', '>=', $this->timestamp($from))
             ->where('exchange_item_metrics.bucket_start', '<', $this->timestamp($to))
             ->whereNotNull('exchange_item_metrics.log_return')
+            ->where(static function (Builder $query): void {
+                $query->whereNull('exchange_item_metrics.return_weight')
+                    ->orWhere('exchange_item_metrics.return_weight', '>', 0);
+            })
             ->orderBy('exchange_item_metrics.bucket_start')
             ->select([
                 'exchange_item_metrics.exchange_item_id',
@@ -213,7 +220,7 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
     public function getTopGainers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array
     {
         return $this->mapItemMetrics(
-            $this->bucketItemMetrics($metricsItemId, $bucketStart)
+            $this->onlyReliableReturns($this->bucketItemMetrics($metricsItemId, $bucketStart))
                 ->where('log_return', '>', 0)
                 ->orderByDesc('log_return')
                 ->limit($limit),
@@ -227,7 +234,7 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
     public function getTopLosers(int $metricsItemId, CarbonImmutable $bucketStart, int $limit): array
     {
         return $this->mapItemMetrics(
-            $this->bucketItemMetrics($metricsItemId, $bucketStart)
+            $this->onlyReliableReturns($this->bucketItemMetrics($metricsItemId, $bucketStart))
                 ->where('log_return', '<', 0)
                 ->orderBy('log_return')
                 ->limit($limit),
@@ -286,6 +293,20 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
             ->with('exchangeItem')
             ->where('exchange_metrics_item_id', $metricsItemId)
             ->where('bucket_start', $this->timestamp($bucketStart));
+    }
+
+    /**
+     * Leaves out the returns of thinly traded items, whose weight is zero. A null
+     * weight means the volume was unknown and the return is trusted.
+     *
+     * @param  Builder<ExchangeItemMetric>  $query
+     * @return Builder<ExchangeItemMetric>
+     */
+    private function onlyReliableReturns(Builder $query): Builder
+    {
+        return $query->where(static function (Builder $query): void {
+            $query->whereNull('return_weight')->orWhere('return_weight', '>', 0);
+        });
     }
 
     /**

@@ -97,6 +97,82 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->assertSame($this->divineMetrics->id, $market->exchange_metrics_item_id);
     }
 
+    public function test_a_return_with_too_few_traded_units_is_kept_but_left_out_of_the_market(): void
+    {
+        config(['poe.metrics.min_hourly_units' => 2.0, 'poe.metrics.full_weight_hourly_units' => 20.0]);
+
+        $this->snapshotAt(
+            '2030-01-01 06:00:00',
+            ['item-a' => 10.0, 'item-b' => 10.0, 'item-c' => 10.0],
+            volumes: ['item-a' => 1000.0, 'item-b' => 1000.0, 'item-c' => 1000.0],
+        );
+        $this->snapshotAt(
+            '2030-01-01 18:00:00',
+            ['item-a' => 11.0, 'item-b' => 10.0, 'item-c' => 5.0],
+            volumes: ['item-a' => 1000.0, 'item-b' => 1000.0, 'item-c' => 5.0],
+        );
+
+        $this->collect('2030-01-01 12:00:00');
+
+        $rows = $this->itemMetrics('2030-01-01 12:00:00');
+        $market = ExchangeMarketMetric::query()->where('poe_league_id', $this->league->id)->sole();
+
+        $this->assertEqualsWithDelta(log(0.5), $rows[$this->itemC->id]->log_return, 1e-12);
+        $this->assertSame(0.0, $rows[$this->itemC->id]->return_weight);
+        $this->assertSame(1.0, $rows[$this->itemC->id]->units);
+        $this->assertNull($rows[$this->itemC->id]->residual);
+        $this->assertNotNull($rows[$this->itemA->id]->residual);
+        $this->assertSame(2, $market->basket_size);
+        $this->assertSame(3, $market->basket_total);
+        $this->assertEqualsWithDelta(log(1.1) / 2.0, $market->market_return, 1e-12);
+    }
+
+    public function test_the_return_weight_grows_with_the_less_traded_side_of_the_return(): void
+    {
+        config(['poe.metrics.min_hourly_units' => 2.0, 'poe.metrics.full_weight_hourly_units' => 20.0]);
+
+        $this->snapshotAt('2030-01-01 06:00:00', ['item-a' => 10.0], volumes: ['item-a' => 100.0]);
+        $this->snapshotAt('2030-01-01 16:00:00', ['item-a' => 10.0], volumes: ['item-a' => 100.0]);
+        $this->snapshotAt('2030-01-01 17:00:00', ['item-a' => 10.0], volumes: ['item-a' => 300.0]);
+
+        $this->collect('2030-01-01 12:00:00');
+
+        $row = $this->itemMetrics('2030-01-01 12:00:00')[$this->itemA->id];
+
+        // the mean of 10 and 30 units is 20, the previous bucket has 10 units
+        $this->assertSame(20.0, $row->units);
+        $this->assertSame(0.5, $row->return_weight);
+    }
+
+    public function test_unknown_volume_keeps_the_full_weight_and_the_plain_market_median(): void
+    {
+        $this->snapshotAt('2030-01-01 06:00:00', ['item-a' => 10.0, 'item-b' => 10.0, 'item-c' => 10.0]);
+        $this->snapshotAt('2030-01-01 18:00:00', ['item-a' => 11.0, 'item-b' => 10.0, 'item-c' => 9.0]);
+
+        $this->collect('2030-01-01 12:00:00');
+
+        $row = $this->itemMetrics('2030-01-01 12:00:00')[$this->itemA->id];
+        $market = ExchangeMarketMetric::query()->where('poe_league_id', $this->league->id)->sole();
+
+        $this->assertNull($row->units);
+        $this->assertSame(1.0, $row->return_weight);
+        $this->assertSame(3, $market->basket_size);
+    }
+
+    public function test_no_market_is_stored_when_every_return_is_too_thinly_traded(): void
+    {
+        $this->snapshotAt('2030-01-01 06:00:00', ['item-a' => 10.0], volumes: ['item-a' => 10.0]);
+        $this->snapshotAt('2030-01-01 18:00:00', ['item-a' => 12.0], volumes: ['item-a' => 10.0]);
+
+        $this->collect('2030-01-01 12:00:00');
+
+        $row = $this->itemMetrics('2030-01-01 12:00:00')[$this->itemA->id];
+
+        $this->assertNotNull($row->log_return);
+        $this->assertNull($row->residual);
+        $this->assertSame(0, $this->marketMetricsCount($this->league));
+    }
+
     public function test_the_residual_subtracts_the_market_with_the_default_beta_of_one(): void
     {
         $this->snapshotAt('2030-01-01 06:00:00', ['item-a' => 10.0, 'item-b' => 10.0, 'item-c' => 10.0]);
@@ -394,10 +470,11 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
     /**
      * @param  array<string, float>  $rates
      * @param  array<string, float>  $coreRates
+     * @param  array<string, float>  $volumes
      */
-    private function snapshotAt(string $createdAt, array $rates, array $coreRates = ['divine' => 1.0]): void
+    private function snapshotAt(string $createdAt, array $rates, array $coreRates = ['divine' => 1.0], array $volumes = []): void
     {
-        $this->snapshot($this->league, $this->type, $createdAt, $rates, $coreRates);
+        $this->snapshot($this->league, $this->type, $createdAt, $rates, $coreRates, $volumes);
     }
 
     private function collect(string $bucketStart): void

@@ -34,7 +34,7 @@ class LeagueRouteFeatureTest extends FeatureTestCase
         $row = $this->rowOf($league);
 
         $this->assertSame(
-            ['game', 'slug', 'name', 'isActive', 'lastSnapshotAt', 'basketSize', 'marketReturnSeries'],
+            ['game', 'slug', 'name', 'isActive', 'lastSnapshotAt', 'basketSize', 'basketTotal', 'marketReturnSeries'],
             array_keys($row),
         );
         $this->assertSame('poe2', $row['game']);

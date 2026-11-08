@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $bucket_start
  * @property float $market_return
  * @property int $basket_size
+ * @property int $basket_total
  * @property-read int $poe_league_id
  * @property-read PoeLeague $league
  * @property-read int $exchange_metrics_item_id

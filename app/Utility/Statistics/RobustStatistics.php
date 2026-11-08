@@ -39,6 +39,58 @@ final readonly class RobustStatistics
     }
 
     /**
+     * Median where every value counts as many times as its weight. With equal
+     * weights it equals the plain median. Values with a zero weight are ignored.
+     *
+     * @param  array<int, float>  $values
+     * @param  array<int, float>  $weights  same keys as the values, none negative
+     *
+     * @throws InvalidArgumentException when the total weight is not positive or a weight is missing or negative
+     */
+    public function weightedMedian(array $values, array $weights): float
+    {
+        $pairs = [];
+        $total = 0.0;
+
+        foreach ($values as $key => $value) {
+            $weight = $weights[$key] ?? null;
+
+            if ($weight === null || $weight < 0.0) {
+                throw new InvalidArgumentException('Every value needs a non-negative weight.');
+            }
+
+            if ($weight > 0.0) {
+                $pairs[] = ['value' => $value, 'weight' => $weight];
+                $total += $weight;
+            }
+        }
+
+        if ($total <= 0.0) {
+            throw new InvalidArgumentException('Weighted median needs a positive total weight.');
+        }
+
+        usort($pairs, static fn (array $a, array $b): int => $a['value'] <=> $b['value']);
+
+        $half = $total / 2.0;
+        $cumulative = 0.0;
+        $lastIndex = max(0, count($pairs) - 1);
+
+        foreach ($pairs as $index => $pair) {
+            $cumulative += $pair['weight'];
+
+            if (abs($cumulative - $half) < self::MIN_SPREAD && $index < $lastIndex) {
+                return ($pair['value'] + $pairs[$index + 1]['value']) / 2.0;
+            }
+
+            if ($cumulative > $half) {
+                return $pair['value'];
+            }
+        }
+
+        return $pairs[$lastIndex]['value'];
+    }
+
+    /**
      * Percentile with linear interpolation between the closest ranks.
      *
      * @param  array<int, float>  $values

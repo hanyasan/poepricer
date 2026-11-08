@@ -5,7 +5,7 @@ import type { ItemMetricRow, SeriesPoint } from '~/types/metrics'
  */
 export function useItemMetrics() {
   const items = ref<ItemMetricRow[]>([
-    { slug: 'sample-item', name: 'Sample item', price: 1.5, logReturn: 0.02, residual: 0.01, residualMad: 0.03, beta: 1, observations: 14 },
+    { slug: 'sample-item', name: 'Sample item', price: 1.5, logReturn: 0.02, residual: 0.01, residualMad: 0.03, beta: 1, observations: 14, units: 25, returnWeight: 1 },
   ])
 
   const marketSeries = ref<SeriesPoint[]>([

@@ -14,5 +14,7 @@ final readonly class LeagueUnusualMoveDto
         public float $ratio,
         public float $beta,
         public int $observations,
+        public ?float $units,
+        public ?float $returnWeight,
     ) {}
 }

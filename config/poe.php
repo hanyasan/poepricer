@@ -15,6 +15,8 @@ return [
         'min_residual_observations' => (int) env('METRICS_MIN_RESIDUAL_OBSERVATIONS', 4),
         'min_beta_observations' => (int) env('METRICS_MIN_BETA_OBSERVATIONS', 6),
         'beta_prior_weight' => (int) env('METRICS_BETA_PRIOR_WEIGHT', 14),
+        'min_hourly_units' => (float) env('METRICS_MIN_HOURLY_UNITS', 2.0),
+        'full_weight_hourly_units' => (float) env('METRICS_FULL_WEIGHT_HOURLY_UNITS', 20.0),
     ],
     'overview' => [
         'top_limit' => (int) env('OVERVIEW_TOP_LIMIT', 10),

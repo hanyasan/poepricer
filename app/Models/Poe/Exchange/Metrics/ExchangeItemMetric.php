@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $residual
  * @property float|null $residual_mad
  * @property int $observations
+ * @property float|null $units
+ * @property float|null $return_weight
  * @property-read int $exchange_item_id
  * @property-read ExchangeItem $exchangeItem
  * @property-read int $exchange_metrics_item_id

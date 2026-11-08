@@ -24,6 +24,9 @@ final class MainPageLeagueResource extends BaseResource
             'basketSize' => $mainLeague->exchange_market_metrics === []
                 ? 0
                 : $mainLeague->exchange_market_metrics[array_key_last($mainLeague->exchange_market_metrics)]->basket_size,
+            'basketTotal' => $mainLeague->exchange_market_metrics === []
+                ? 0
+                : $mainLeague->exchange_market_metrics[array_key_last($mainLeague->exchange_market_metrics)]->basket_total,
             'marketReturnSeries' => array_map(static fn (ExchangeMarketMetricDto $metric) => [
                 'bucket' => self::toDefaultResponseDatetime($metric->bucket_start),
                 'value' => $metric->market_return,

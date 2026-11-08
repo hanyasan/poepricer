@@ -22,8 +22,8 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
         $inDivine = $this->prices($league->id, 'divine');
         $inExalted = $this->prices($league->id, 'exalted');
 
-        $this->assertSame([$item->id => [0.5]], $inDivine);
-        $this->assertSame([$item->id => [300.0]], $inExalted);
+        $this->assertSame([$item->id => [['price' => 0.5, 'units' => null]]], $inDivine);
+        $this->assertSame([$item->id => [['price' => 300.0, 'units' => null]]], $inExalted);
     }
 
     public function test_it_groups_the_prices_of_all_snapshots_by_item(): void
@@ -38,8 +38,8 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
 
         $prices = $this->prices($league->id, 'divine');
 
-        $this->assertEqualsCanonicalizing([1.0, 2.0], $prices[$itemA->id]);
-        $this->assertSame([5.0], $prices[$itemB->id]);
+        $this->assertEqualsCanonicalizing([1.0, 2.0], array_column($prices[$itemA->id], 'price'));
+        $this->assertSame([5.0], array_column($prices[$itemB->id], 'price'));
     }
 
     public function test_the_period_includes_its_start_and_excludes_its_end(): void
@@ -53,7 +53,7 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
         $this->snapshot($league, $type, '2030-01-01 11:59:59', ['item-a' => 3.0]);
         $this->snapshot($league, $type, '2030-01-01 12:00:00', ['item-a' => 4.0]);
 
-        $this->assertEqualsCanonicalizing([2.0, 3.0], $this->prices($league->id, 'divine')[$item->id]);
+        $this->assertEqualsCanonicalizing([2.0, 3.0], array_column($this->prices($league->id, 'divine')[$item->id], 'price'));
     }
 
     public function test_it_ignores_the_prices_of_other_leagues(): void
@@ -93,8 +93,27 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
         $this->assertCount(1, $this->prices($league->id, 'divine'));
     }
 
+    public function test_units_are_the_volume_divided_by_the_item_rate(): void
+    {
+        $league = $this->league('Bucket Units League');
+        $type = $this->exchangeType();
+        $item = $this->item($league, 'item-a');
+
+        $this->snapshot(
+            $league,
+            $type,
+            '2030-01-01 01:00:00',
+            ['item-a' => 0.5],
+            ['divine' => 1.0, 'exalted' => 600.0],
+            ['item-a' => 10.0],
+        );
+
+        $this->assertSame([$item->id => [['price' => 0.5, 'units' => 20.0]]], $this->prices($league->id, 'divine'));
+        $this->assertSame([$item->id => [['price' => 300.0, 'units' => 20.0]]], $this->prices($league->id, 'exalted'));
+    }
+
     /**
-     * @return array<int, array<int, float>>
+     * @return array<int, list<array{price: float, units: float|null}>>
      */
     private function prices(int $leagueId, string $currencyTradeId): array
     {

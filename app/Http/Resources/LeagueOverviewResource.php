@@ -23,6 +23,7 @@ final class LeagueOverviewResource extends BaseResource
                 'marketReturn12h' => $overview->marketReturn12h,
                 'marketReturn7d' => $overview->marketReturn7d,
                 'basketSize' => $overview->basketSize,
+                'basketTotal' => $overview->basketTotal,
                 'lastSnapshotAt' => self::toDefaultResponseDatetime($overview->lastSnapshotAt),
             ],
             'marketReturnSeries' => array_map(static fn (ExchangeMarketMetricDto $metric): array => [
@@ -39,6 +40,8 @@ final class LeagueOverviewResource extends BaseResource
                 'ratio' => $move->ratio,
                 'beta' => $move->beta,
                 'observations' => $move->observations,
+                'units' => $move->units,
+                'returnWeight' => $move->returnWeight,
             ], $overview->unusualMoves),
             'topGainers' => $this->itemMoves($overview->topGainers),
             'topLosers' => $this->itemMoves($overview->topLosers),

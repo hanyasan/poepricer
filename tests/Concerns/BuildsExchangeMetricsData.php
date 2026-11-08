@@ -56,6 +56,7 @@ trait BuildsExchangeMetricsData
      *
      * @param  array<string, float>  $rates  stored item rate by item trade id
      * @param  array<string, float>  $coreRates  rate of each currency in the core, the primary one has 1
+     * @param  array<string, float>  $volumes  traded volume in the primary currency by item trade id
      */
     private function snapshot(
         PoeLeague $league,
@@ -63,6 +64,7 @@ trait BuildsExchangeMetricsData
         string $createdAt,
         array $rates,
         array $coreRates = ['divine' => 1.0],
+        array $volumes = [],
     ): PriceCheckCore {
         $priceCheck = PriceCheck::query()->create([
             'poe_league_id' => $league->id,
@@ -91,6 +93,7 @@ trait BuildsExchangeMetricsData
                     ->where('trade_id', $tradeId)
                     ->value('id'),
                 'price_check_core_id' => $core->id,
+                'volume' => $volumes[$tradeId] ?? null,
             ]);
         }
 

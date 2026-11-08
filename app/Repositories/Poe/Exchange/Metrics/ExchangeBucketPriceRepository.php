@@ -11,9 +11,10 @@ final readonly class ExchangeBucketPriceRepository implements ExchangeBucketPric
 {
     /**
      * The stored rate is expressed in the core's primary currency, so it is
-     * multiplied by the core's rate of the requested currency.
+     * multiplied by the core's rate of the requested currency. Units are the items
+     * traded per hour (volume divided by the item rate), null when the volume is unknown.
      *
-     * @return array<int, array<int, float>>
+     * @return array<int, list<array{price: float, units: float|null}>>
      */
     #[\Override]
     public function getPricesByItem(
@@ -39,11 +40,17 @@ final readonly class ExchangeBucketPriceRepository implements ExchangeBucketPric
             ->select([
                 'exchange_item_prices.exchange_item_id',
                 DB::raw('exchange_item_prices.rate * price_check_core_types.rate as price'),
+                DB::raw('exchange_item_prices.volume / exchange_item_prices.rate as units'),
             ])
             ->cursor();
 
         foreach ($rows as $row) {
-            $prices[$row->exchange_item_id][] = (float) $row->getAttribute('price');
+            $units = $row->getAttribute('units');
+
+            $prices[$row->exchange_item_id][] = [
+                'price' => (float) $row->getAttribute('price'),
+                'units' => $units === null ? null : (float) $units,
+            ];
         }
 
         return $prices;

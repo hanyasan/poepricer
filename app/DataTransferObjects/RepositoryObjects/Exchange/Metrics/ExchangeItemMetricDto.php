@@ -14,6 +14,8 @@ final readonly class ExchangeItemMetricDto
         public ?float $residual,
         public ?float $residual_mad,
         public int $observations,
+        public ?float $units,
+        public ?float $return_weight,
         public int $exchange_item_id,
         public int $exchange_metrics_item_id,
         public ExchangeItemDto $exchange_item,

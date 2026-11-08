@@ -20,6 +20,7 @@ final readonly class LeagueOverviewDto
         public ?float $marketReturn12h,
         public ?float $marketReturn7d,
         public int $basketSize,
+        public int $basketTotal,
         public ?string $lastSnapshotAt,
         public array $marketReturnSeries = [],
         public array $unusualMoves = [],

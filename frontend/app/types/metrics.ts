@@ -8,7 +8,10 @@ export interface League {
   name: string
   isActive: boolean
   lastSnapshotAt: string | null
+  /** Items whose return is reliable enough to count in the market return. */
   basketSize: number
+  /** All items of the basket. */
+  basketTotal: number
   marketReturnSeries: SeriesPoint[]
 }
 
@@ -21,6 +24,10 @@ export interface ItemMetricRow {
   residualMad: number | null
   beta: number
   observations: number
+  /** Items traded per hour; `null` when the volume is unknown. */
+  units: number | null
+  /** Trust in the return from 0 to 1; `null` when the volume is unknown. */
+  returnWeight: number | null
 }
 
 export interface SeriesPoint {
@@ -50,6 +57,8 @@ export interface UnusualMove extends ItemMove {
   ratio: number
   beta: number
   observations: number
+  units: number | null
+  returnWeight: number | null
 }
 
 export interface LeagueOverview {
@@ -60,6 +69,7 @@ export interface LeagueOverview {
     marketReturn12h: number | null
     marketReturn7d: number | null
     basketSize: number
+    basketTotal: number
     lastSnapshotAt: string | null
   }
   marketReturnSeries: SeriesPoint[]

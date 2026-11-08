@@ -9,6 +9,7 @@ final class ExchangeMarketMetricDto
         public string $bucket_start,
         public float $market_return,
         public int $basket_size,
+        public int $basket_total,
         public int $poe_league_id,
         public int $exchange_metrics_item_id,
     ) {}

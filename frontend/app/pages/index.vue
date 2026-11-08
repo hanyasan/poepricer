@@ -46,8 +46,11 @@ function lastReturn(league: League): number | null {
 
               <dl class="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <dt class="text-muted">В корзине</dt>
-                  <dd class="font-medium">{{ league.basketSize }}</dd>
+                  <dt class="text-muted">В расчёте рынка</dt>
+                  <dd class="font-medium">
+                    {{ league.basketSize }}
+                    <span class="font-normal text-muted">из {{ league.basketTotal }}</span>
+                  </dd>
                 </div>
                 <div>
                   <dt class="text-muted">Обновлено</dt>

@@ -16,6 +16,7 @@ const columns: TableColumn<UnusualMove>[] = [
   { accessorKey: 'ratio', header: 'Остаток / MAD' },
   { accessorKey: 'beta', header: 'β' },
   { accessorKey: 'observations', header: 'Наблюдений' },
+  { accessorKey: 'units', header: 'Сделок/ч' },
 ]
 </script>
 
@@ -50,7 +51,10 @@ const columns: TableColumn<UnusualMove>[] = [
           </span>
           <span v-else class="text-muted">—</span>
         </KpiTile>
-        <KpiTile label="В корзине">{{ overview.kpi.basketSize }}</KpiTile>
+        <KpiTile label="Предметов в расчёте рынка">
+          {{ overview.kpi.basketSize }}
+          <span class="text-base font-normal text-muted">из {{ overview.kpi.basketTotal }}</span>
+        </KpiTile>
         <KpiTile label="Обновлено"><LocalDateTime :value="overview.kpi.lastSnapshotAt" empty="нет снимков" /></KpiTile>
       </div>
 
@@ -66,6 +70,7 @@ const columns: TableColumn<UnusualMove>[] = [
           <h2 class="text-lg font-medium">Необычные движения</h2>
           <p class="text-sm text-muted">
             Предметы, чей остаток за последние 12ч больше двух своих residual_mad. Цены в {{ currencyName }}.
+            Серым выделено число сделок у предметов с малым объёмом: их доходности менее надёжны.
           </p>
           <p v-if="overview.unusualMoves.length === 0" class="text-muted">Сейчас таких предметов нет.</p>
           <UTable v-else :data="overview.unusualMoves" :columns="columns">
@@ -81,6 +86,9 @@ const columns: TableColumn<UnusualMove>[] = [
             </template>
             <template #ratio-cell="{ row }">{{ row.original.ratio.toFixed(1) }}×</template>
             <template #beta-cell="{ row }">{{ row.original.beta.toFixed(2) }}</template>
+            <template #units-cell="{ row }">
+              <span :class="weightClass(row.original.returnWeight)">{{ formatUnits(row.original.units) }}</span>
+            </template>
           </UTable>
         </section>
 
