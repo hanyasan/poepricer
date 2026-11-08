@@ -6,6 +6,9 @@ import type { ItemBucketRow } from '~/types/metrics'
 definePageMeta({ showLeagueNav: false })
 
 const route = useRoute()
+const { t } = useI18n()
+const localePath = useLocalePath()
+const { leagueName } = useLeagueName()
 
 const leagueSlug = computed(() => route.params.league as string)
 const itemSlug = computed(() => route.params.item as string)
@@ -28,28 +31,58 @@ if (import.meta.server && notFound.value) {
   setResponseStatus(useRequestEvent()!, 404)
 }
 
-const periodLabel = computed(() => ({ '24h': 'за 24 часа', '7d': 'за 7 дней', league: 'за всю лигу' })[period.value])
+const periodLabel = computed(() => t(`item.periodSuffix.${period.value}`))
 
-const columns: TableColumn<ItemBucketRow>[] = [
-  { accessorKey: 'bucket', header: 'Корзина' },
-  { accessorKey: 'price', header: 'Цена' },
-  { accessorKey: 'logReturn', header: 'Δ цены' },
-  { accessorKey: 'residual', header: 'Остаток' },
-  { accessorKey: 'residualMad', header: 'Колебание' },
-  { accessorKey: 'observations', header: 'Выборка' },
-  { accessorKey: 'units', header: 'Сделок/ч' },
-]
+const columns = computed<TableColumn<ItemBucketRow>[]>(() => [
+  { accessorKey: 'bucket', header: t('common.columns.bucket') },
+  { accessorKey: 'price', header: t('common.columns.price') },
+  { accessorKey: 'logReturn', header: t('common.columns.priceChange') },
+  { accessorKey: 'residual', header: t('common.columns.residual') },
+  { accessorKey: 'residualMad', header: t('common.columns.fluctuation') },
+  { accessorKey: 'observations', header: t('common.columns.sample') },
+  { accessorKey: 'units', header: t('common.columns.tradesPerHour') },
+])
 
 const emptyText = computed(() =>
-  (buckets.value?.meta.total ?? 0) > 0 ? 'Такой страницы нет.' : 'За этот период нет значений.',
+  (buckets.value?.meta.total ?? 0) > 0 ? t('common.noPage') : t('item.buckets.empty'),
 )
+
+// The title and the description are built from the item and its current price. A missing item
+// is not a page to index, and neither is a later page of the table of buckets.
+const seoTitle = computed(() =>
+  summary.value ? t('seo.item.title', { item: summary.value.item.name, league: leagueName.value }) : t('item.notFound'),
+)
+const seoDescription = computed(() => {
+  if (!summary.value) return t('item.notFoundDescription')
+
+  const params = { item: summary.value.item.name, league: leagueName.value }
+
+  return summary.value.current === null
+    ? t('seo.item.descriptionNoPrice', params)
+    : t('seo.item.description', { ...params, price: formatPrice(summary.value.current.price), currency: currencyName.value ?? '' })
+})
+
+useBreadcrumbSchema(() => [
+  { name: t('layout.leagues'), path: '/' },
+  { name: leagueName.value, path: `/${leagueSlug.value}` },
+  { name: t('league.items'), path: `/${leagueSlug.value}/items` },
+  { name: summary.value?.item.name ?? t('item.notFound') },
+])
+
+useSeoMeta({
+  title: seoTitle,
+  description: seoDescription,
+  ogTitle: seoTitle,
+  ogDescription: seoDescription,
+  robots: () => (notFound.value || route.query.page !== undefined ? 'noindex, follow' : undefined),
+})
 </script>
 
 <template>
   <div class="space-y-6">
-    <NuxtLink :to="`/${leagueSlug}/items`" class="inline-flex items-center gap-1 text-sm text-muted hover:text-primary">
+    <NuxtLink :to="localePath(`/${leagueSlug}/items`)" class="inline-flex items-center gap-1 text-sm text-muted hover:text-primary">
       <UIcon name="i-lucide-arrow-left" class="size-4" />
-      Все предметы
+      {{ $t('item.backToItems') }}
     </NuxtLink>
 
     <UAlert
@@ -57,8 +90,8 @@ const emptyText = computed(() =>
       color="neutral"
       variant="subtle"
       icon="i-lucide-search-x"
-      title="Предмет не найден"
-      description="В этой лиге нет такого предмета."
+      :title="$t('item.notFound')"
+      :description="$t('item.notFoundDescription')"
     />
 
     <UAlert
@@ -66,50 +99,49 @@ const emptyText = computed(() =>
       color="error"
       variant="subtle"
       icon="i-lucide-triangle-alert"
-      title="Не удалось загрузить предмет"
-      :actions="[{ label: 'Повторить', onClick: () => refreshSummary() }]"
+      :title="$t('item.loadError')"
+      :actions="[{ label: $t('common.retry'), onClick: () => refreshSummary() }]"
     />
 
     <USkeleton v-else-if="!summary" class="h-96" />
 
     <template v-else>
       <div class="flex flex-wrap items-center gap-3">
-        <h2 class="text-xl font-semibold">{{ summary.item.name }}</h2>
+        <h1 class="text-2xl font-semibold">{{ summary.item.name }}</h1>
         <UBadge v-if="summary.item.category" color="neutral" variant="subtle">{{ summary.item.category }}</UBadge>
         <UBadge v-if="summary.current?.isUnusual" color="warning" variant="subtle" icon="i-lucide-activity">
-          необычное движение
+          {{ $t('item.unusualMove') }}
         </UBadge>
-        <UBadge v-if="summary.current?.lowData" color="neutral" variant="subtle">мало данных</UBadge>
+        <UBadge v-if="summary.current?.lowData" color="neutral" variant="subtle">{{ $t('common.lowData') }}</UBadge>
       </div>
 
-      <p v-if="summary.currency === null" class="text-muted">Для этой лиги не настроены валюты метрик.</p>
+      <p v-if="summary.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
 
-      <p v-else-if="summary.lastBucket === null" class="text-muted">Метрики для этой валюты ещё не рассчитаны.</p>
+      <p v-else-if="summary.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
 
       <template v-else>
-        <p v-if="summary.current === null" class="text-muted">
-          В последней корзине (<LocalDateTime :value="summary.lastBucket" />) у предмета нет значений. Ниже показаны данные
-          за выбранный период.
-        </p>
+        <i18n-t v-if="summary.current === null" keypath="item.noCurrent" tag="p" scope="global" class="text-muted">
+          <template #date><LocalDateTime :value="summary.lastBucket" /></template>
+        </i18n-t>
 
         <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <KpiTile :label="`Цена, ${currencyName}`">{{ formatPrice(summary.current.price) }}</KpiTile>
-          <KpiTile label="Δ цены за последнюю корзину">
+          <KpiTile :label="$t('item.kpi.price', { currency: currencyName })">{{ formatPrice(summary.current.price) }}</KpiTile>
+          <KpiTile :label="$t('item.kpi.priceChange')">
             <span :class="returnClass(summary.current.logReturn)">{{ orDash(summary.current.logReturn, formatReturn) }}</span>
           </KpiTile>
-          <KpiTile label="Остаток">
+          <KpiTile :label="$t('item.kpi.residual')">
             <span :class="returnClass(summary.current.residual)">{{ orDash(summary.current.residual, formatReturn) }}</span>
             <span v-if="summary.current.residualMad !== null" class="text-base font-normal text-muted">
-              при колебании {{ formatPercent(summary.current.residualMad) }}
+              {{ $t('item.kpi.residualFluctuation', { value: formatPercent(summary.current.residualMad) }) }}
             </span>
           </KpiTile>
-          <KpiTile label="Сделок в час">
+          <KpiTile :label="$t('item.kpi.tradesPerHour')">
             <span :class="weightClass(summary.current.returnWeight)">{{ formatUnits(summary.current.units) }}</span>
           </KpiTile>
-          <KpiTile label="Выборка">
+          <KpiTile :label="$t('item.kpi.sample')">
             <span :class="summary.current.lowData ? 'text-muted' : ''">{{ summary.current.observations }}</span>
           </KpiTile>
-          <KpiTile label="Корзина"><LocalDateTime :value="summary.lastBucket" /></KpiTile>
+          <KpiTile :label="$t('item.kpi.bucket')"><LocalDateTime :value="summary.lastBucket" /></KpiTile>
         </div>
 
         <UAlert
@@ -117,61 +149,64 @@ const emptyText = computed(() =>
           color="error"
           variant="subtle"
           icon="i-lucide-triangle-alert"
-          title="Не удалось загрузить графики"
-          :actions="[{ label: 'Повторить', onClick: () => refreshHistory() }]"
+          :title="$t('item.chartsLoadError')"
+          :actions="[{ label: $t('common.retry'), onClick: () => refreshHistory() }]"
         />
 
-        <p v-else-if="history && history.series.length === 0" class="text-muted">За выбранный период у предмета нет значений.</p>
+        <p v-else-if="history && history.series.length === 0" class="text-muted">{{ $t('item.noSeries') }}</p>
 
         <template v-else-if="history">
           <section class="space-y-3">
-            <h3 class="text-lg font-medium">Цена {{ periodLabel }}</h3>
+            <h3 class="text-lg font-medium">{{ $t('item.priceTitle', { period: periodLabel }) }}</h3>
             <ItemPriceChart :points="history.series" />
           </section>
 
           <section class="space-y-3">
             <h3 class="flex items-center gap-1.5 text-lg font-medium">
-              Остаток {{ periodLabel }}
-              <InfoTooltip label="Что такое остаток и полоса на графике">
-                <p>Остаток — движение предмета за вычетом рыночного</p>
-                <p>Точка за пределами полосы, двух обычных колебаний предмета, — необычное движение</p>
+              {{ $t('item.residualTitle', { period: periodLabel }) }}
+              <InfoTooltip :label="$t('item.residualHelp.label')">
+                <p>{{ $t('item.residualHelp.lineOne') }}</p>
+                <p>{{ $t('item.residualHelp.lineTwo') }}</p>
               </InfoTooltip>
             </h3>
             <ItemResidualChart :points="history.series" />
+            <NuxtLink :to="localePath('/about/metrics#items')" class="inline-block text-sm text-primary hover:underline">
+              {{ $t('metrics.howToRead') }}
+            </NuxtLink>
           </section>
         </template>
 
         <section class="space-y-3">
-          <h3 class="text-lg font-medium">Бета</h3>
-          <p v-if="summary.beta === null" class="text-muted">Бета этого предмета ещё не рассчитана.</p>
+          <h3 class="text-lg font-medium">{{ $t('item.beta.title') }}</h3>
+          <p v-if="summary.beta === null" class="text-muted">{{ $t('item.beta.notCalculated') }}</p>
           <template v-else>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiTile label="β">{{ summary.beta.beta.toFixed(2) }}</KpiTile>
-              <KpiTile label="Сырая β">{{ summary.beta.rawBeta.toFixed(2) }}</KpiTile>
-              <KpiTile label="R²">{{ orDash(summary.beta.rSquared, (value) => value.toFixed(2)) }}</KpiTile>
-              <KpiTile label="Рассчитана"><LocalDateTime :value="summary.beta.calculatedAt" /></KpiTile>
+              <KpiTile :label="$t('item.beta.beta')">{{ summary.beta.beta.toFixed(2) }}</KpiTile>
+              <KpiTile :label="$t('item.beta.raw')">{{ summary.beta.rawBeta.toFixed(2) }}</KpiTile>
+              <KpiTile :label="$t('item.beta.rSquared')">{{ orDash(summary.beta.rSquared, (value) => value.toFixed(2)) }}</KpiTile>
+              <KpiTile :label="$t('item.beta.calculated')"><LocalDateTime :value="summary.beta.calculatedAt" /></KpiTile>
             </div>
             <p class="text-sm text-muted">
-              Показывает, как сильно предмет следует за рынком: 1,5 означает рост на 15% при росте рынка на 10%. При R² около нуля рынок
-              почти ничего не объясняет.
+              {{ $t('item.beta.explanation') }}
+              <NuxtLink :to="localePath('/about/metrics#beta')" class="text-primary hover:underline">{{ $t('metrics.howToRead') }}</NuxtLink>
             </p>
             <ItemBetaChart v-if="history && history.betaHistory.length >= 2" :betas="history.betaHistory" />
             <p v-else-if="history" class="text-sm text-muted">
-              За выбранный период бета пересчитывалась {{ history.betaHistory.length }} раз, для графика нужно хотя бы два пересчёта.
+              {{ $t('item.beta.fewRecalculations', { count: history.betaHistory.length }) }}
             </p>
           </template>
         </section>
 
         <section class="space-y-3">
-          <h3 class="text-lg font-medium">Значения по корзинам</h3>
+          <h3 class="text-lg font-medium">{{ $t('item.buckets.title') }}</h3>
 
           <UAlert
             v-if="bucketsError"
             color="error"
             variant="subtle"
             icon="i-lucide-triangle-alert"
-            title="Не удалось загрузить таблицу"
-            :actions="[{ label: 'Повторить', onClick: () => refreshBuckets() }]"
+            :title="$t('item.buckets.loadError')"
+            :actions="[{ label: $t('common.retry'), onClick: () => refreshBuckets() }]"
           />
 
           <template v-else-if="buckets">

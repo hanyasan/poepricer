@@ -3,82 +3,105 @@ import type { TableColumn } from '@nuxt/ui'
 import type { UnusualMove } from '~/types/metrics'
 
 const route = useRoute()
+const { t } = useI18n()
+const localePath = useLocalePath()
+const { leagueName } = useLeagueName()
 
 const slug = computed(() => route.params.league as string)
 const { currencyName } = storeToRefs(useFiltersStore())
 const { data: overview, status, refresh } = await useLeagueOverview(slug)
 
-const columns: TableColumn<UnusualMove>[] = [
-  { accessorKey: 'name', header: 'Предмет' },
-  { accessorKey: 'price', header: 'Цена' },
-  { accessorKey: 'logReturn', header: 'Δ цены' },
-  { accessorKey: 'residual', header: 'Остаток' },
-  { accessorKey: 'ratio', header: 'Кратность' },
-  { accessorKey: 'beta', header: 'β' },
-  { accessorKey: 'observations', header: 'Выборка' },
-  { accessorKey: 'units', header: 'Сделок/ч' },
-]
+useBreadcrumbSchema(() => [
+  { name: t('layout.leagues'), path: '/' },
+  { name: leagueName.value },
+])
+
+useSeoMeta({
+  title: () => t('seo.league.title', { league: leagueName.value }),
+  description: () => t('seo.league.description', { league: leagueName.value }),
+  ogTitle: () => t('seo.league.title', { league: leagueName.value }),
+  ogDescription: () => t('seo.league.description', { league: leagueName.value }),
+})
+
+const columns = computed<TableColumn<UnusualMove>[]>(() => [
+  { accessorKey: 'name', header: t('common.columns.item') },
+  { accessorKey: 'price', header: t('common.columns.price') },
+  { accessorKey: 'logReturn', header: t('common.columns.priceChange') },
+  { accessorKey: 'residual', header: t('common.columns.residual') },
+  { accessorKey: 'ratio', header: t('common.columns.ratio') },
+  { accessorKey: 'beta', header: t('common.columns.beta') },
+  { accessorKey: 'observations', header: t('common.columns.sample') },
+  { accessorKey: 'units', header: t('common.columns.tradesPerHour') },
+])
 </script>
 
 <template>
   <div class="space-y-6">
+    <h1 class="text-2xl font-semibold">{{ $t('seo.league.title', { league: leagueName }) }}</h1>
+
     <UAlert
       v-if="status === 'error'"
       color="error"
       variant="subtle"
       icon="i-lucide-triangle-alert"
-      title="Не удалось загрузить обзор лиги"
-      :actions="[{ label: 'Повторить', onClick: () => refresh() }]"
+      :title="$t('overview.loadError')"
+      :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
     />
 
     <div v-else-if="!overview" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <USkeleton v-for="index in 4" :key="index" class="h-24" />
     </div>
 
-    <p v-else-if="overview.currency === null" class="text-muted">Для этой лиги не настроены валюты метрик.</p>
+    <p v-else-if="overview.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
 
     <template v-else>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile label="Доходность последней корзины">
+        <KpiTile :label="$t('overview.kpi.lastBucketReturn')">
           <span v-if="overview.kpi.marketReturnLastBucket !== null" :class="returnClass(overview.kpi.marketReturnLastBucket)">
             {{ formatReturn(overview.kpi.marketReturnLastBucket) }}
           </span>
           <span v-else class="text-muted">—</span>
         </KpiTile>
-        <KpiTile label="Доходность рынка, 7д">
+        <KpiTile :label="$t('overview.kpi.return7d')">
           <span v-if="overview.kpi.marketReturn7d !== null" :class="returnClass(overview.kpi.marketReturn7d)">
             {{ formatReturn(overview.kpi.marketReturn7d) }}
           </span>
           <span v-else class="text-muted">—</span>
         </KpiTile>
-        <KpiTile label="Предметов в расчёте рынка">
+        <KpiTile :label="$t('overview.kpi.basketSize')">
           {{ overview.kpi.basketSize }}
-          <span class="text-base font-normal text-muted">из {{ overview.kpi.basketTotal }}</span>
+          <span class="text-base font-normal text-muted">{{ $t('home.outOf', { total: overview.kpi.basketTotal }) }}</span>
         </KpiTile>
-        <KpiTile label="Обновлено"><LocalDateTime :value="overview.kpi.lastSnapshotAt" empty="нет снимков" /></KpiTile>
+        <KpiTile :label="$t('overview.kpi.updated')"><LocalDateTime :value="overview.kpi.lastSnapshotAt" :empty="$t('common.noSnapshots')" /></KpiTile>
       </div>
 
-      <p v-if="overview.lastBucket === null" class="text-muted">Метрики для этой валюты ещё не рассчитаны.</p>
+      <p v-if="overview.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
 
       <template v-else>
         <section class="space-y-3">
-          <h2 class="text-lg font-medium">Доходность рынка</h2>
+          <h2 class="text-lg font-medium">{{ $t('overview.marketReturn') }}</h2>
           <LineChart :points="overview.marketReturnSeries" />
+          <NuxtLink :to="localePath('/about/metrics#market')" class="inline-block text-sm text-primary hover:underline">
+            {{ $t('metrics.howToRead') }}
+          </NuxtLink>
         </section>
 
         <section class="space-y-3">
           <h2 class="flex items-center gap-1.5 text-lg font-medium">
-            Необычные движения
-            <InfoTooltip label="Что такое необычные движения">
-              <p>Предметы, чей остаток в последней корзине больше двух обычных для них колебаний</p>
-              <p>Цены в {{ currencyName }}</p>
-              <p>Серым выделено число сделок у предметов с малым объёмом: их доходности менее надёжны</p>
+            {{ $t('overview.unusualMoves') }}
+            <InfoTooltip :label="$t('overview.unusualHelp.label')">
+              <p>{{ $t('overview.unusualHelp.lineOne') }}</p>
+              <p>{{ $t('overview.unusualHelp.lineTwo', { currency: currencyName }) }}</p>
+              <p>{{ $t('overview.unusualHelp.lineThree') }}</p>
             </InfoTooltip>
           </h2>
-          <p v-if="overview.unusualMoves.length === 0" class="text-muted">Сейчас таких предметов нет.</p>
+          <NuxtLink :to="localePath('/about/metrics#items')" class="inline-block text-sm text-primary hover:underline">
+            {{ $t('metrics.howToReadTable') }}
+          </NuxtLink>
+          <p v-if="overview.unusualMoves.length === 0" class="text-muted">{{ $t('overview.noUnusualMoves') }}</p>
           <UTable v-else :data="overview.unusualMoves" :columns="columns" :ui="{ th: 'align-bottom' }">
             <template #name-cell="{ row }">
-              <NuxtLink :to="`/${slug}/items/${row.original.slug}`" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
+              <NuxtLink :to="localePath(`/${slug}/items/${row.original.slug}`)" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
             </template>
             <template #price-cell="{ row }">{{ formatPrice(row.original.price) }}</template>
             <template #logReturn-cell="{ row }">
@@ -96,8 +119,8 @@ const columns: TableColumn<UnusualMove>[] = [
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2">
-          <ItemMoveList title="Топ роста за последнюю корзину" :moves="overview.topGainers" :league-slug="slug" />
-          <ItemMoveList title="Топ падения за последнюю корзину" :moves="overview.topLosers" :league-slug="slug" />
+          <ItemMoveList :title="$t('overview.topGainers')" :moves="overview.topGainers" :league-slug="slug" />
+          <ItemMoveList :title="$t('overview.topLosers')" :moves="overview.topLosers" :league-slug="slug" />
         </section>
       </template>
     </template>

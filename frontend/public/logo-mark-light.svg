@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="PoE Pricer">
+  <defs>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbe4ee"/>
+    </linearGradient>
+    <linearGradient id="horn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e7c25f"/>
+      <stop offset="1" stop-color="#a47c2c"/>
+    </linearGradient>
+    <path id="silhouette" d="M32,13 C26,13 21,16 17,23 C14,27 12.5,31 13,34 C13,38 16,41 17.5,44 C19,50 23,57 27,60.5 Q32,64 37,60.5 C41,57 45,50 46.5,44 C48,41 51,38 51,34 C51.5,31 50,27 47,23 C43,16 38,13 32,13Z M14.5,25 C10.5,21 9.2,12 11.5,3 C12.5,11 15.5,17 21,21Z M49.5,25 C53.5,21 54.8,12 52.5,3 C51.5,11 48.5,17 43,21Z"/>
+    <g id="mask">
+      <!-- horns -->
+      <path d="M14.5,25 C10.5,21 9.2,12 11.5,3 C12.5,11 15.5,17 21,21Z M49.5,25 C53.5,21 54.8,12 52.5,3 C51.5,11 48.5,17 43,21Z" fill="url(#horn)" stroke="#082f3f" stroke-width="1.1" stroke-linejoin="round"/>
+      <!-- face -->
+      <path d="M32,13 C26,13 21,16 17,23 C14,27 12.5,31 13,34 C13,38 16,41 17.5,44 C19,50 23,57 27,60.5 Q32,64 37,60.5 C41,57 45,50 46.5,44 C48,41 51,38 51,34 C51.5,31 50,27 47,23 C43,16 38,13 32,13Z" fill="url(#skin)" stroke="#082f3f" stroke-width="1.2" stroke-linejoin="round"/>
+      <!-- hair line and forehead wrinkles -->
+      <path d="M17.5,23 C20,15 26,12.8 32,12.8 C38,12.8 44,15 46.5,23 C42,18 37,17 32,17 C27,17 22,18 17.5,23Z" fill="#0a2433"/>
+      <path d="M24,21 Q32,18.5 40,21 M26,24 Q32,22 38,24" fill="none" stroke="#082f3f" stroke-opacity="0.5" stroke-width="0.9" stroke-linecap="round"/>
+      <!-- sad brows and gold eyes -->
+      <path d="M23,30.5 Q26.5,28.3 30.5,25.5 M41,30.5 Q37.5,28.3 33.5,25.5" fill="none" stroke="#082f3f" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="25.5" cy="34" rx="4.6" ry="2.9" transform="rotate(-10 25.5 34)" fill="#e7b73c" stroke="#082f3f" stroke-width="1.1"/>
+      <ellipse cx="38.5" cy="34" rx="4.6" ry="2.9" transform="rotate(10 38.5 34)" fill="#e7b73c" stroke="#082f3f" stroke-width="1.1"/>
+      <circle cx="26.3" cy="34" r="1.6" fill="#082f3f"/>
+      <circle cx="37.7" cy="34" r="1.6" fill="#082f3f"/>
+      <!-- nose and cheek folds -->
+      <path d="M32,34 V40.5 M27.5,43 Q27.5,40.5 30.5,41 Q32,42.2 33.5,41 Q36.5,40.5 36.5,43" fill="none" stroke="#082f3f" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M26,42 Q22,46 23,52 M38,42 Q42,46 41,52" fill="none" stroke="#082f3f" stroke-opacity="0.5" stroke-width="1" stroke-linecap="round"/>
+      <!-- mouth -->
+      <path d="M21.5,43.5 Q27,47.5 32,46 Q37,47.5 42.5,43.5 Q41,54 32,56 Q23,54 21.5,43.5Z" fill="#4a1414" stroke="#b02a2e" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M23,45 L26,46.6 L24.5,50.5Z M41,45 L38,46.6 L39.5,50.5Z M27.5,46.8 L30.5,47.3 L29.5,50.2Z M36.5,46.8 L33.5,47.3 L34.5,50.2Z" fill="#f0e2b6"/>
+    </g>
+    <clipPath id="sil"><use xlink:href="#silhouette"/></clipPath>
+    <clipPath id="left"><path d="M0,0 H22.5 L19.2,70 H0Z"/></clipPath>
+    <clipPath id="middle"><path d="M24.5,0 L21.2,70 H42.8 L39.5,0Z"/></clipPath>
+    <clipPath id="right"><path d="M64,0 H41.5 L44.8,70 H64Z"/></clipPath>
+  </defs>
+  <!-- the side parts are the left and the right halves of the same face, wrapped around the middle part -->
+  <g clip-path="url(#left)">
+    <g transform="matrix(1 0 -0.0516 1 -9 0)">
+      <use xlink:href="#mask"/>
+      <g clip-path="url(#sil)"><path d="M32.4,0 V64" stroke="#082f3f" stroke-width="1.4"/></g>
+    </g>
+  </g>
+  <g clip-path="url(#right)">
+    <g transform="matrix(1 0 0.0516 1 9 0)">
+      <use xlink:href="#mask"/>
+      <g clip-path="url(#sil)"><path d="M31.6,0 V64" stroke="#082f3f" stroke-width="1.4"/></g>
+    </g>
+  </g>
+  <!-- the middle part is pushed back: smaller, lower and darker -->
+  <g clip-path="url(#middle)">
+    <g transform="translate(32 34) scale(0.95) translate(-32 -32)">
+      <use xlink:href="#mask"/>
+      <use xlink:href="#silhouette" fill="#04141c" fill-opacity="0.25"/>
+    </g>
+  </g>
+</svg>

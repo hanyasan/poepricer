@@ -13,6 +13,7 @@ const BAND_MULTIPLIER = 2
 
 const props = defineProps<{ points: ItemSeriesPoint[] }>()
 
+const { t } = useI18n()
 const { colors, symbolSize, xAxisLine, gridLine, marker } = useChartTheme()
 
 const labels = computed(() => props.points.map((point) => formatBucketLabel(point.bucket)))
@@ -25,8 +26,8 @@ function tooltip(params: unknown): string {
 
   const lines = [
     labels.value[first!.dataIndex],
-    `Остаток: ${orDash(point.residual, formatReturn)}`,
-    point.residualMad === null ? 'Полоса: —' : `Полоса: ±${formatPercent(BAND_MULTIPLIER * point.residualMad)}`,
+    t('chart.residualValue', { value: orDash(point.residual, formatReturn) }),
+    point.residualMad === null ? t('chart.bandNone') : t('chart.bandValue', { value: formatPercent(BAND_MULTIPLIER * point.residualMad) }),
   ]
 
   return lines.join('<br>')
@@ -49,7 +50,7 @@ const option = computed(() => ({
   },
   series: [
     {
-      name: 'Нижняя граница',
+      name: t('chart.bandLowerEdge'),
       type: 'line',
       stack: 'band',
       silent: true,
@@ -58,7 +59,7 @@ const option = computed(() => ({
       data: props.points.map((point) => (point.residualMad === null ? null : -BAND_MULTIPLIER * point.residualMad)),
     },
     {
-      name: 'Полоса',
+      name: t('chart.band'),
       type: 'line',
       stack: 'band',
       silent: true,
@@ -68,7 +69,7 @@ const option = computed(() => ({
       data: props.points.map((point) => (point.residualMad === null ? null : 2 * BAND_MULTIPLIER * point.residualMad)),
     },
     {
-      name: 'Остаток',
+      name: t('chart.residual'),
       type: 'line',
       showSymbol: props.points.length < 40,
       symbol: 'circle',

@@ -1,0 +1,198 @@
+{
+  "common": {
+    "retry": "Retry",
+    "noData": "No data",
+    "lowData": "low data",
+    "noPage": "There is no such page",
+    "noSnapshots": "no snapshots",
+    "currenciesNotConfigured": "No metric currencies are set up for this league",
+    "metricsNotCalculated": "The metrics for this currency have not been calculated yet",
+    "openMetricsHint": "Click to open the description of the metrics",
+    "columns": {
+      "item": "Item",
+      "price": "Price",
+      "priceChange": "Δ price",
+      "residual": "Residual",
+      "fluctuation": "Fluctuation",
+      "beta": "β",
+      "sample": "Sample",
+      "tradesPerHour": "Trades/h",
+      "ratio": "Multiple",
+      "bucket": "Bucket"
+    }
+  },
+  "layout": {
+    "leagues": "Leagues",
+    "aboutMetrics": "About metrics",
+    "toggleTheme": "Toggle theme",
+    "switchLanguage": "Switch language to {language}",
+    "leagueNotFound": "League not found",
+    "footerNote": "Prices come from poe.ninja and are refreshed every few minutes"
+  },
+  "home": {
+    "title": "Leagues",
+    "loadError": "Could not load the list of leagues",
+    "empty": "There are no leagues with data for the last 7 days yet",
+    "inMarket": "In the market calculation",
+    "outOf": "of {total}",
+    "updated": "Updated",
+    "return7d": "Market return, 7d",
+    "intro": "PoE Pricer shows how prices change in Path of Exile and Path of Exile 2: where the whole market is heading and which items behave unusually. The figures are calculated from poe.ninja data.",
+    "metricsLink": "How the price metrics are calculated"
+  },
+  "league": {
+    "overview": "Overview",
+    "items": "Items",
+    "market": "Market",
+    "currencyLabel": "Metric currency",
+    "periods": {
+      "24h": "24 hours",
+      "7d": "7 days",
+      "league": "Whole league"
+    }
+  },
+  "overview": {
+    "loadError": "Could not load the league overview",
+    "kpi": {
+      "lastBucketReturn": "Return of the last bucket",
+      "return7d": "Market return, 7d",
+      "basketSize": "Items in the market calculation",
+      "updated": "Updated"
+    },
+    "marketReturn": "Market return",
+    "unusualMoves": "Unusual moves",
+    "unusualHelp": {
+      "label": "What are unusual moves",
+      "lineOne": "Items whose residual in the last bucket exceeds twice their usual fluctuation",
+      "lineTwo": "Prices in {currency}",
+      "lineThree": "The trade count of low-volume items is grayed out: their returns are less reliable"
+    },
+    "noUnusualMoves": "There are no such items right now",
+    "topGainers": "Top gainers of the last bucket",
+    "topLosers": "Top losers of the last bucket"
+  },
+  "market": {
+    "title": "Market return"
+  },
+  "items": {
+    "loadError": "Could not load the items",
+    "searchPlaceholder": "Search by name",
+    "category": "Category",
+    "allCategories": "All categories",
+    "noCategory": "No category",
+    "unusualFirst": "Unusual first",
+    "found": "Found: {total}",
+    "help": {
+      "label": "What the highlight and the labels in the table mean",
+      "lineOne": "Rows with an unusual residual are highlighted: the residual exceeds twice the usual fluctuation of the item",
+      "lineTwo": "“Low data”: the item has few observations",
+      "lineThree": "The trade count of low-volume items is grayed out"
+    },
+    "sortBy": "Sort by “{column}”",
+    "sortedAscending": "Sorted by “{column}”, ascending",
+    "sortedDescending": "Sorted by “{column}”, descending",
+    "noMatches": "Nothing matches these filters",
+    "noItems": "This league has no items",
+    "priceWeek": "Price, 7d",
+    "sparklineLabel": "Price over 7 days: from {from} to {to}",
+    "sparklineEmpty": "Not enough data for a chart"
+  },
+  "item": {
+    "backToItems": "All items",
+    "notFound": "Item not found",
+    "notFoundDescription": "There is no such item in this league",
+    "loadError": "Could not load the item",
+    "unusualMove": "unusual move",
+    "noCurrent": "The item has no values in the last bucket ({date}). The data for the selected period is shown below.",
+    "kpi": {
+      "price": "Price, {currency}",
+      "priceChange": "Δ price over the last bucket",
+      "residual": "Residual",
+      "residualFluctuation": "at a fluctuation of {value}",
+      "tradesPerHour": "Trades per hour",
+      "sample": "Sample",
+      "bucket": "Bucket"
+    },
+    "chartsLoadError": "Could not load the charts",
+    "noSeries": "The item has no values for the selected period",
+    "periodSuffix": {
+      "24h": "over 24 hours",
+      "7d": "over 7 days",
+      "league": "over the whole league"
+    },
+    "priceTitle": "Price {period}",
+    "residualTitle": "Residual {period}",
+    "residualHelp": {
+      "label": "What the residual and the band on the chart are",
+      "lineOne": "The residual is the move of the item minus the move of the market",
+      "lineTwo": "A point outside the band, twice the usual fluctuation of the item, is an unusual move"
+    },
+    "beta": {
+      "title": "Beta",
+      "beta": "β",
+      "raw": "Raw β",
+      "rSquared": "R²",
+      "calculated": "Calculated",
+      "notCalculated": "The beta of this item has not been calculated yet",
+      "explanation": "Shows how closely the item follows the market: 1.5 means a 15% rise when the market rises by 10%. With R² close to zero the market explains almost nothing.",
+      "fewRecalculations": "Beta recalculations in the selected period: {count}. The chart needs at least two."
+    },
+    "buckets": {
+      "title": "Values by bucket",
+      "loadError": "Could not load the table",
+      "empty": "There are no values for this period"
+    }
+  },
+  "chart": {
+    "price": "Price",
+    "residual": "Residual",
+    "band": "Band",
+    "bandLowerEdge": "Lower edge",
+    "bandValue": "Band: ±{value}",
+    "bandNone": "Band: —",
+    "residualValue": "Residual: {value}",
+    "rawBeta": "Raw β"
+  },
+  "seo": {
+    "home": {
+      "title": "Path of Exile prices and metrics",
+      "description": "Price dynamics of Path of Exile and Path of Exile 2 from poe.ninja data: market return, unusual item moves, betas and residuals for every league."
+    },
+    "league": {
+      "title": "{league} market overview",
+      "description": "{league} league: market return, unusual price moves, top gainers and losers among the items."
+    },
+    "items": {
+      "title": "{league} items",
+      "description": "Prices and metrics of the items of the {league} league: price change, residual, fluctuation, beta and trade count."
+    },
+    "item": {
+      "title": "{item}: price in {league}",
+      "description": "{item} in the {league} league: price {price} {currency}, price change, residual, beta and history by bucket.",
+      "descriptionNoPrice": "{item} in the {league} league: price change, residual, beta and history by bucket."
+    },
+    "market": {
+      "title": "{league} market",
+      "description": "Market return of the {league} league over time."
+    },
+    "metrics": {
+      "title": "About metrics",
+      "description": "How the metrics of the site work: the item basket, market return, residual, fluctuation, beta and R², and how to read them."
+    }
+  },
+  "metrics": {
+    "title": "About metrics",
+    "subtitle": "How the metrics on the site work and how to read them",
+    "contents": "Contents",
+    "backHome": "Back to the leagues",
+    "howToRead": "How to read this chart",
+    "howToReadTable": "How these figures are calculated"
+  },
+  "errorPage": {
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "There is no such page: the address may have changed or the league may be over",
+    "home": "Back to the home page",
+    "title": "Error",
+    "description": "Something went wrong. Try to reload the page later."
+  }
+}

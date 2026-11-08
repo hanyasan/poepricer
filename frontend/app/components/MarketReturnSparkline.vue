@@ -12,8 +12,6 @@ const props = defineProps<{ points: SeriesPoint[] }>()
 
 const { colors, symbolSize, marker } = useChartTheme()
 
-const formatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-
 const option = computed(() => ({
   animation: false,
   grid: { left: 0, right: 0, top: 4, bottom: 4 },
@@ -22,7 +20,7 @@ const option = computed(() => ({
     confine: true,
     formatter: (params: Array<{ dataIndex: number }>) => {
       const point = props.points[params[0]!.dataIndex]!
-      return `${formatter.format(new Date(point.bucket))}<br/>${(point.value * 100).toFixed(2)}%`
+      return `${dateTimeFormatter().format(new Date(point.bucket))}<br/>${(point.value * 100).toFixed(2)}%`
     },
   },
   xAxis: { type: 'category', show: false, boundaryGap: false, data: props.points.map((point) => point.bucket) },

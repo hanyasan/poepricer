@@ -1,5 +1,34 @@
-const bucketFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-const priceFormatter = new Intl.NumberFormat('ru-RU', { maximumSignificantDigits: 4 })
+const DEFAULT_LANGUAGE = 'ru-RU'
+
+/**
+ * Language tag of the current locale for `Intl`. The composables of the app are not
+ * reachable from every place the formatters are called from, so the tag is taken from
+ * the Nuxt app when there is one and falls back to the default language otherwise.
+ */
+export function intlLanguage(): string {
+  return tryUseNuxtApp()?.$i18n.localeProperties.value.language ?? DEFAULT_LANGUAGE
+}
+
+const dateFormatters = new Map<string, Intl.DateTimeFormat>()
+const priceFormatters = new Map<string, Intl.NumberFormat>()
+
+/** A short date with the time, in the time zone of the browser; the same one for the whole app. */
+export function dateTimeFormatter(language: string = intlLanguage()): Intl.DateTimeFormat {
+  let formatter = dateFormatters.get(language)
+
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat(language, {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+    dateFormatters.set(language, formatter)
+  }
+
+  return formatter
+}
 
 /** A log return as a signed percent: 0.0132 becomes "+1.32%". */
 export function formatReturn(value: number): string {
@@ -23,7 +52,15 @@ export function weightClass(weight: number | null): string {
 }
 
 export function formatPrice(value: number): string {
-  return priceFormatter.format(value)
+  const language = intlLanguage()
+  let formatter = priceFormatters.get(language)
+
+  if (formatter === undefined) {
+    formatter = new Intl.NumberFormat(language, { maximumSignificantDigits: 4 })
+    priceFormatters.set(language, formatter)
+  }
+
+  return formatter.format(value)
 }
 
 /** An unsigned percent for a scale such as a MAD: 0.0049 becomes "0.49%". */
@@ -38,5 +75,5 @@ export function orDash<T>(value: T | null, format: (value: T) => string): string
 
 /** A bucket or beta moment as a short label of a chart axis. */
 export function formatBucketLabel(moment: string): string {
-  return bucketFormatter.format(new Date(moment))
+  return dateTimeFormatter().format(new Date(moment))
 }

@@ -7,6 +7,24 @@ import type { ItemsSortField } from '~/composables/useLeagueItems'
 definePageMeta({ usesPeriod: false })
 
 const route = useRoute()
+const { t } = useI18n()
+const localePath = useLocalePath()
+const { leagueName } = useLeagueName()
+
+useBreadcrumbSchema(() => [
+  { name: t('layout.leagues'), path: '/' },
+  { name: leagueName.value, path: `/${route.params.league}` },
+  { name: t('league.items') },
+])
+
+useSeoMeta({
+  title: () => t('seo.items.title', { league: leagueName.value }),
+  description: () => t('seo.items.description', { league: leagueName.value }),
+  ogTitle: () => t('seo.items.title', { league: leagueName.value }),
+  ogDescription: () => t('seo.items.description', { league: leagueName.value }),
+  // A table of a search, a category or a sort order, or its later page, is not a page of its own.
+  robots: () => (Object.keys(route.query).length > 0 ? 'noindex, follow' : undefined),
+})
 
 const slug = computed(() => route.params.league as string)
 
@@ -18,34 +36,27 @@ const { data: categories } = useItemCategories(slug)
 const ALL_CATEGORIES = '__all__'
 const NO_CATEGORY = 'uncategorized'
 
-const columns: TableColumn<ItemMetricRow>[] = [
-  { accessorKey: 'name', header: 'Предмет' },
-  { accessorKey: 'price', header: 'Цена' },
-  { accessorKey: 'logReturn', header: 'Δ цены' },
-  { accessorKey: 'residual', header: 'Остаток' },
-  { accessorKey: 'residualMad', header: 'Колебание' },
-  { accessorKey: 'beta', header: 'β' },
-  { accessorKey: 'observations', header: 'Выборка' },
-  { accessorKey: 'units', header: 'Сделок/ч' },
-  { id: 'sparkline', header: 'Цена, 7д' },
-]
-
 /** Columns the server can sort by, in the order of the table. */
-const sortableColumns: { field: ItemsSortField; label: string }[] = [
-  { field: 'name', label: 'Предмет' },
-  { field: 'price', label: 'Цена' },
-  { field: 'logReturn', label: 'Δ цены' },
-  { field: 'residual', label: 'Остаток' },
-  { field: 'residualMad', label: 'Колебание' },
-  { field: 'beta', label: 'β' },
-  { field: 'observations', label: 'Выборка' },
-  { field: 'units', label: 'Сделок/ч' },
-]
+const sortableColumns = computed<{ field: ItemsSortField; label: string }[]>(() => [
+  { field: 'name', label: t('common.columns.item') },
+  { field: 'price', label: t('common.columns.price') },
+  { field: 'logReturn', label: t('common.columns.priceChange') },
+  { field: 'residual', label: t('common.columns.residual') },
+  { field: 'residualMad', label: t('common.columns.fluctuation') },
+  { field: 'beta', label: t('common.columns.beta') },
+  { field: 'observations', label: t('common.columns.sample') },
+  { field: 'units', label: t('common.columns.tradesPerHour') },
+])
+
+const columns = computed<TableColumn<ItemMetricRow>[]>(() => [
+  ...sortableColumns.value.map((column) => ({ accessorKey: column.field, header: column.label })),
+  { id: 'sparkline', header: t('items.priceWeek') },
+])
 
 const categoryItems = computed(() => [
-  { label: 'Все категории', value: ALL_CATEGORIES },
+  { label: t('items.allCategories'), value: ALL_CATEGORIES },
   ...(categories.value?.categories ?? []).map((name) => ({ label: name, value: name })),
-  ...(categories.value?.hasUncategorized ? [{ label: 'Без категории', value: NO_CATEGORY }] : []),
+  ...(categories.value?.hasUncategorized ? [{ label: t('items.noCategory'), value: NO_CATEGORY }] : []),
 ])
 
 const selectedCategory = computed(() => (uncategorized.value ? NO_CATEGORY : (category.value ?? ALL_CATEGORIES)))
@@ -78,8 +89,8 @@ function sortIcon(field: ItemsSortField): string {
 }
 
 function sortLabel(field: ItemsSortField, label: string): string {
-  if (sort.value.field !== field) return `Сортировать по «${label}»`
-  return `Сортировка по «${label}», ${sort.value.direction === 'asc' ? 'по возрастанию' : 'по убыванию'}`
+  if (sort.value.field !== field) return t('items.sortBy', { column: label })
+  return t(sort.value.direction === 'asc' ? 'items.sortedAscending' : 'items.sortedDescending', { column: label })
 }
 
 /** A new column starts descending, the name ascending; a second click flips it. */
@@ -112,37 +123,39 @@ const tableMeta = {
 const hasFilters = computed(() => search.value !== undefined || category.value !== undefined || uncategorized.value)
 
 const emptyText = computed(() => {
-  if ((items.value?.meta.total ?? 0) > 0) return 'Такой страницы нет.'
+  if ((items.value?.meta.total ?? 0) > 0) return t('common.noPage')
 
-  return hasFilters.value ? 'По этим условиям ничего не найдено.' : 'В этой лиге нет предметов.'
+  return hasFilters.value ? t('items.noMatches') : t('items.noItems')
 })
 </script>
 
 <template>
   <div class="space-y-4">
+    <h1 class="text-2xl font-semibold">{{ $t('seo.items.title', { league: leagueName }) }}</h1>
+
     <UAlert
       v-if="error"
       color="error"
       variant="subtle"
       icon="i-lucide-triangle-alert"
-      title="Не удалось загрузить предметы"
-      :actions="[{ label: 'Повторить', onClick: () => refresh() }]"
+      :title="$t('items.loadError')"
+      :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
     />
 
     <USkeleton v-else-if="!items" class="h-96" />
 
-    <p v-else-if="items.meta.currency === null" class="text-muted">Для этой лиги не настроены валюты метрик.</p>
+    <p v-else-if="items.meta.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
 
-    <p v-else-if="items.meta.lastBucket === null" class="text-muted">Метрики для этой валюты ещё не рассчитаны.</p>
+    <p v-else-if="items.meta.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
 
     <template v-else>
       <div class="flex flex-wrap items-center gap-3">
-        <UInput v-model="searchText" icon="i-lucide-search" placeholder="Поиск по названию" class="w-64" maxlength="100" />
+        <UInput v-model="searchText" icon="i-lucide-search" :placeholder="$t('items.searchPlaceholder')" class="w-64" maxlength="100" />
         <USelect
           :model-value="selectedCategory"
           :items="categoryItems"
           class="w-56"
-          aria-label="Категория"
+          :aria-label="$t('items.category')"
           @update:model-value="onCategoryChange"
         />
         <UButton
@@ -152,22 +165,22 @@ const emptyText = computed(() => {
           :aria-pressed="unusualFirst"
           @click="toggleUnusualFirst"
         >
-          Сначала необычные
+          {{ $t('items.unusualFirst') }}
         </UButton>
       </div>
 
       <p class="flex items-center gap-1.5 text-sm text-muted">
-        Найдено: {{ items.meta.total }}
+        {{ $t('items.found', { total: items.meta.total }) }}
         <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
-          <NuxtLink to="/about/metrics" aria-label="Что означают подсветка и пометки в таблице" class="inline-flex hover:text-primary">
+          <NuxtLink :to="localePath('/about/metrics')" :aria-label="$t('items.help.label')" class="inline-flex hover:text-primary">
             <UIcon name="i-lucide-circle-help" class="size-4" />
           </NuxtLink>
           <template #content>
             <div class="max-w-xs space-y-1 text-sm leading-relaxed">
-              <p>Строки с необычным остатком подсвечены: остаток больше двух обычных колебаний предмета</p>
-              <p>«Мало данных»: у предмета мало наблюдений</p>
-              <p>Серым выделено число сделок у предметов с малым объёмом</p>
-              <p class="text-muted">Нажмите, чтобы открыть описание метрик</p>
+              <p>{{ $t('items.help.lineOne') }}</p>
+              <p>{{ $t('items.help.lineTwo') }}</p>
+              <p>{{ $t('items.help.lineThree') }}</p>
+              <p class="text-muted">{{ $t('common.openMetricsHint') }}</p>
             </div>
           </template>
         </UTooltip>
@@ -195,8 +208,8 @@ const emptyText = computed(() => {
 
         <template #name-cell="{ row }">
           <div class="flex items-center gap-2">
-            <NuxtLink :to="`/${slug}/items/${row.original.slug}`" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
-            <UBadge v-if="row.original.lowData" color="neutral" variant="subtle" size="sm">мало данных</UBadge>
+            <NuxtLink :to="localePath(`/${slug}/items/${row.original.slug}`)" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
+            <UBadge v-if="row.original.lowData" color="neutral" variant="subtle" size="sm">{{ $t('common.lowData') }}</UBadge>
           </div>
         </template>
         <template #price-cell="{ row }">{{ orDash(row.original.price, formatPrice) }}</template>

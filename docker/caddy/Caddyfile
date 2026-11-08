@@ -1,3 +1,7 @@
+www.hanyasan.net {
+    redir https://hanyasan.net{uri} permanent
+}
+
 hanyasan.net {
     encode zstd gzip
     reverse_proxy frontend:3000

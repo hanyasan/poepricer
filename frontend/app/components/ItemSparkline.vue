@@ -32,10 +32,15 @@ const trendClass = computed(() => {
   return last === first ? 'text-muted' : last > first ? 'text-success' : 'text-error'
 })
 
+const { t } = useI18n()
+
 const label = computed(() =>
   hasLine.value
-    ? `Цена за 7 дней: с ${formatPrice(props.points[0]!.value)} до ${formatPrice(props.points[props.points.length - 1]!.value)}`
-    : 'Недостаточно данных для графика',
+    ? t('items.sparklineLabel', {
+        from: formatPrice(props.points[0]!.value),
+        to: formatPrice(props.points[props.points.length - 1]!.value),
+      })
+    : t('items.sparklineEmpty'),
 )
 </script>
 

@@ -10,6 +10,7 @@ use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ betas: ItemBeta[] }>()
 
+const { t } = useI18n()
 const { colors, symbolSize, xAxisLine, gridLine, marker } = useChartTheme()
 
 const option = computed(() => ({
@@ -39,7 +40,7 @@ const option = computed(() => ({
       data: props.betas.map((beta) => beta.beta),
     },
     {
-      name: 'Сырая β',
+      name: t('chart.rawBeta'),
       type: 'line',
       symbol: 'circle',
       symbolSize,

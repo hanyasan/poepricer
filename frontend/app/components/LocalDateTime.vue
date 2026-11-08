@@ -5,9 +5,11 @@
  */
 const props = defineProps<{ value: string | null; empty?: string }>()
 
-const formatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+const { localeProperties } = useI18n()
 
-const text = computed(() => (props.value === null ? (props.empty ?? '—') : formatter.format(new Date(props.value))))
+const text = computed(() =>
+  props.value === null ? (props.empty ?? '—') : dateTimeFormatter(localeProperties.value.language).format(new Date(props.value)),
+)
 </script>
 
 <template>

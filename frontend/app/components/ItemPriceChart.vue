@@ -10,6 +10,7 @@ use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ points: ItemSeriesPoint[] }>()
 
+const { t } = useI18n()
 const { colors, symbolSize, xAxisLine, gridLine, marker } = useChartTheme()
 
 const option = computed(() => ({
@@ -33,7 +34,7 @@ const option = computed(() => ({
   },
   series: [
     {
-      name: 'Цена',
+      name: t('chart.price'),
       type: 'line',
       showSymbol: props.points.length < 40,
       symbol: 'circle',

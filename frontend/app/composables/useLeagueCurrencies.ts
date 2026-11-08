@@ -6,13 +6,14 @@ import type { LeagueCurrency } from '~/types/metrics'
  */
 export async function useLeagueCurrencies(slug: MaybeRefOrGetter<string>) {
   const filters = useFiltersStore()
+  const { t } = useI18n()
 
   const { data, error, status, refresh } = await useFetch<LeagueCurrency[]>(
     () => `/api/leagues/${toValue(slug)}/currencies`,
   )
 
   if (error.value?.statusCode === 404) {
-    throw createError({ statusCode: 404, statusMessage: 'Лига не найдена', fatal: true })
+    throw createError({ statusCode: 404, statusMessage: t('layout.leagueNotFound'), fatal: true })
   }
 
   watch(data, (items) => filters.setCurrencies(items ?? []), { immediate: true })
