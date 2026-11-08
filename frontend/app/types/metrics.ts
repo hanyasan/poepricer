@@ -234,3 +234,47 @@ export interface ItemBucketsPage {
   data: ItemBucketRow[]
   meta: ItemBucketsMeta
 }
+
+/** Window of the price series of an item, counted back from the last price check of the league. */
+export type PriceWindow = '6h' | '24h' | '48h' | '7d'
+
+/** A currency the item was priced in within the window. */
+export interface ItemPriceCurrency {
+  slug: string
+  name: string
+  /** Number of price checks of the window with a price in this currency. */
+  points: number
+}
+
+/** The price and the trades per hour of an item in one price check. */
+export interface ItemPricePoint {
+  at: string
+  price: number
+  units: number
+}
+
+/** Change of the price over the last `hours`, a fraction; `null` when the series does not reach back. */
+export interface ItemPriceChange {
+  hours: number
+  change: number | null
+}
+
+export interface ItemPriceStats {
+  current: ItemPricePoint
+  min: number
+  max: number
+  median: number
+  averageUnits: number
+  changes: ItemPriceChange[]
+}
+
+export interface ItemPrices {
+  /** The currency of the series, the one asked for or the most covered one; `null` without prices. */
+  currency: string | null
+  window: PriceWindow
+  from: string | null
+  to: string | null
+  currencies: ItemPriceCurrency[]
+  points: ItemPricePoint[]
+  stats: ItemPriceStats | null
+}

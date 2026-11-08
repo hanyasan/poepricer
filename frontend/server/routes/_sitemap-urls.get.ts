@@ -43,7 +43,12 @@ export default defineEventHandler(async (): Promise<SitemapUrlInput[]> => {
       })
 
       lastPage = items.meta.lastPage
-      urls.push(...items.data.map((item) => ({ loc: `/${league.slug}/items/${item.slug}`, lastmod, ...withLocales })))
+      for (const item of items.data) {
+        urls.push(
+          { loc: `/${league.slug}/items/${item.slug}`, lastmod, ...withLocales },
+          { loc: `/${league.slug}/items/${item.slug}/prices`, lastmod, ...withLocales },
+        )
+      }
     }
   }
 

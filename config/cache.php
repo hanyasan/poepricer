@@ -4,6 +4,8 @@ use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemBetaDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceCurrencyRowDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceSnapshotRowDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
 use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
@@ -12,6 +14,9 @@ use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemCurrentDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemInfoDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemSummaryDto;
+use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPriceChangeDto;
+use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPricesDto;
+use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPriceStatsDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
@@ -21,6 +26,7 @@ use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBreadthDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketCategoryDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketItemDto;
+use App\Enums\ItemPriceWindowEnum;
 use App\Enums\MetricPeriodEnum;
 use Illuminate\Support\Str;
 
@@ -176,6 +182,12 @@ return [
         ItemCurrentDto::class,
         ExchangeItemBetaDto::class,
         MetricPeriodEnum::class,
+        ItemPricesDto::class,
+        ItemPriceStatsDto::class,
+        ItemPriceChangeDto::class,
+        ItemPriceCurrencyRowDto::class,
+        ItemPriceSnapshotRowDto::class,
+        ItemPriceWindowEnum::class,
     ],
 
 ];

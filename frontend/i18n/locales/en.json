@@ -36,7 +36,7 @@
     "inMarket": "In the market calculation",
     "outOf": "of {total}",
     "updated": "Updated",
-    "return7d": "Market return, 7d",
+    "return7d": "Market price delta, 7d",
     "intro": "PoE Pricer shows how prices change in Path of Exile and Path of Exile 2: where the whole market is heading and which items behave unusually. The figures are calculated from poe.ninja data.",
     "metricsLink": "How the price metrics are calculated"
   },
@@ -54,18 +54,18 @@
   "overview": {
     "loadError": "Could not load the league overview",
     "kpi": {
-      "lastBucketReturn": "Return of the last bucket",
-      "return7d": "Market return, 7d",
+      "lastBucketReturn": "Market price delta of the last bucket",
+      "return7d": "Market price delta, 7d",
       "basketSize": "Items in the market calculation",
       "updated": "Updated"
     },
-    "marketReturn": "Market return",
+    "marketReturn": "Market price delta",
     "unusualMoves": "Unusual moves",
     "unusualHelp": {
       "label": "What are unusual moves",
       "lineOne": "Items whose residual in the last bucket exceeds twice their usual fluctuation",
       "lineTwo": "Prices in {currency}",
-      "lineThree": "The trade count of low-volume items is grayed out: their returns are less reliable"
+      "lineThree": "The trade count of low-volume items is grayed out: their price deltas are less reliable"
     },
     "noUnusualMoves": "There are no such items right now",
     "topGainers": "Top gainers of the last bucket",
@@ -79,20 +79,20 @@
     "bucketNotFound": "The league has no such bucket",
     "showLatest": "Show the latest",
     "includeAll": "Include thinly traded items",
-    "includeAllHint": "Their returns are less reliable and are not part of the market return",
-    "noItems": "This bucket has no items with a calculated return",
+    "includeAllHint": "Their price deltas are less reliable and are not part of the market price delta",
+    "noItems": "This bucket has no items with a calculated price delta",
     "breadth": {
       "up": "Grew",
       "down": "Fell",
       "flat": "Unchanged",
       "share": "{percent}%"
     },
-    "marketReturn": "Market return",
-    "marketReturnHint": "The market return is the weighted median of the returns of the basket items, that is the middle of the distribution below",
+    "marketReturn": "Market price delta",
+    "marketReturnHint": "The market price delta is the weighted median of the price deltas of the basket items, that is the middle of the distribution below",
     "histogram": {
-      "title": "Distribution of returns",
+      "title": "Distribution of price deltas",
       "hint": "Click a bar to see the items of its range",
-      "ariaLabel": "Histogram: how many items fell into each return range over the bucket",
+      "ariaLabel": "Histogram: how many items fell into each price delta range over the bucket",
       "lowerTail": "below {to}",
       "upperTail": "{from} and above",
       "between": "from {from} to {to}",
@@ -100,14 +100,14 @@
       "marketReturn": "Market: {value}"
     },
     "selected": {
-      "title": "Items with a return of {range}",
+      "title": "Items with a price delta of {range}",
       "clear": "Clear selection",
       "empty": "No items in this range"
     },
     "categories": {
-      "title": "Return by category",
-      "hint": "Median return of the items of each category",
-      "ariaLabel": "Chart of the median return by item category",
+      "title": "Price delta by category",
+      "hint": "Median price delta of the items of each category",
+      "ariaLabel": "Chart of the median price delta by item category",
       "median": "Median: {value}",
       "count": "Items: {count}"
     }
@@ -143,7 +143,7 @@
     "unusualMove": "unusual move",
     "noCurrent": "The item has no values in the last bucket ({date}). The data for the selected period is shown below.",
     "kpi": {
-      "price": "Price, {currency}",
+      "price": "Price in {currency}",
       "priceChange": "Δ price over the last bucket",
       "residual": "Residual",
       "residualFluctuation": "at a fluctuation of {value}",
@@ -179,7 +179,39 @@
       "title": "Values by bucket",
       "loadError": "Could not load the table",
       "empty": "There are no values for this period"
+    },
+    "tabs": {
+      "metrics": "Metrics",
+      "prices": "Prices"
     }
+  },
+  "itemPrices": {
+    "currencyLabel": "Price currency",
+    "windowLabel": "Period",
+    "windows": {
+      "6h": "6 hours",
+      "24h": "24 hours",
+      "48h": "48 hours",
+      "7d": "7 days"
+    },
+    "kpi": {
+      "price": "Price in {currency}",
+      "change": "Change over {hours} h",
+      "min": "Minimum",
+      "max": "Maximum",
+      "median": "Median",
+      "averageUnits": "Average trades per hour"
+    },
+    "chartTitle": "Price in {currency} and trades",
+    "chartLabel": "Chart of the item price and the trades per hour",
+    "unitsHelp": {
+      "label": "What trades per hour mean",
+      "lineOne": "Trades per hour at the moment of each snapshot, from poe.ninja",
+      "lineTwo": "The period shows the average, and where the volume is unknown it counts as zero",
+      "lineThree": "If the item had no price in the selected currency for several snapshots in a row, the line breaks"
+    },
+    "empty": "The item has no prices in the selected period",
+    "loadError": "Could not load the prices"
   },
   "chart": {
     "price": "Price",
@@ -189,16 +221,17 @@
     "bandValue": "Band: ±{value}",
     "bandNone": "Band: —",
     "residualValue": "Residual: {value}",
-    "rawBeta": "Raw β"
+    "rawBeta": "Raw β",
+    "units": "Trades per hour"
   },
   "seo": {
     "home": {
       "title": "Path of Exile prices and metrics",
-      "description": "Price dynamics of Path of Exile and Path of Exile 2 from poe.ninja data: market return, unusual item moves, betas and residuals for every league."
+      "description": "Price dynamics of Path of Exile and Path of Exile 2 from poe.ninja data: market price delta, unusual item moves, betas and residuals for every league."
     },
     "league": {
       "title": "{league} market overview",
-      "description": "{league} league: market return, unusual price moves, top gainers and losers among the items."
+      "description": "{league} league: market price delta, unusual price moves, top gainers and losers among the items."
     },
     "items": {
       "title": "{league} items",
@@ -211,11 +244,16 @@
     },
     "market": {
       "title": "{league} market",
-      "description": "Distribution of item price moves in the {league} league: how many items grew and fell, a histogram of returns and a breakdown by category."
+      "description": "Distribution of item price moves in the {league} league: how many items grew and fell, a histogram of price deltas and a breakdown by category."
     },
     "metrics": {
       "title": "About metrics",
-      "description": "How the metrics of the site work: the item basket, market return, residual, fluctuation, beta and R², and how to read them."
+      "description": "How the metrics of the site work: the item basket, market price delta, residual, fluctuation, beta and R², and how to read them."
+    },
+    "itemPrices": {
+      "title": "{item}: price and trades in {league}",
+      "description": "{item} in the {league} league: price {price} {currency}, change over the last hours, minimum, maximum and trades per hour",
+      "descriptionNoPrice": "{item} in the {league} league: price, change over the last hours and trades per hour"
     }
   },
   "metrics": {

@@ -5,11 +5,14 @@ namespace App\Http\Controllers\League;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ItemBucketsRequest;
 use App\Http\Requests\ItemHistoryRequest;
+use App\Http\Requests\ItemPricesRequest;
 use App\Http\Requests\ItemSummaryRequest;
 use App\Http\Resources\ItemBucketsPageResource;
 use App\Http\Resources\ItemHistoryResource;
+use App\Http\Resources\ItemPricesResource;
 use App\Http\Resources\ItemSummaryResource;
 use App\Services\DataServices\Metrics\LeagueItemDetailServiceContract;
+use App\Services\DataServices\Prices\LeagueItemPricesServiceContract;
 use Illuminate\Http\JsonResponse;
 
 final class LeagueItemController extends Controller
@@ -33,6 +36,17 @@ final class LeagueItemController extends Controller
     ): JsonResponse {
         return \response()->json(
             new ItemHistoryResource($itemDetailService->history($leagueSlug, $itemSlug, $request->detailQuery()))
+        );
+    }
+
+    public function prices(
+        string $leagueSlug,
+        string $itemSlug,
+        ItemPricesRequest $request,
+        LeagueItemPricesServiceContract $itemPricesService,
+    ): JsonResponse {
+        return \response()->json(
+            new ItemPricesResource($itemPricesService->prices($leagueSlug, $itemSlug, $request->pricesQuery()))
         );
     }
 

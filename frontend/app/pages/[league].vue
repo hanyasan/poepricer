@@ -28,7 +28,8 @@ const links = computed(() => [
         <NuxtLink :to="basePath" class="text-lg font-semibold hover:text-primary">{{ league?.name ?? slug }}</NuxtLink>
         <span v-if="game" class="text-sm text-muted">{{ gameTitle(game) }}</span>
       </div>
-      <LeagueToolbar :show-period="route.meta.usesPeriod !== false" />
+      <ItemPriceToolbar v-if="route.meta.usesPriceToolbar" />
+      <LeagueToolbar v-else :show-period="route.meta.usesPeriod !== false" />
     </div>
     <UNavigationMenu v-if="showNav" :items="links" />
     <NuxtPage />

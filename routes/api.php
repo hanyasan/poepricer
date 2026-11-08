@@ -14,5 +14,6 @@ Route::group(['prefix' => 'leagues'], function () {
     Route::get('{leagueSlug}/items', [LeagueController::class, 'items']);
     Route::get('{leagueSlug}/items/{itemSlug}/summary', [LeagueItemController::class, 'summary']);
     Route::get('{leagueSlug}/items/{itemSlug}/history', [LeagueItemController::class, 'history']);
+    Route::get('{leagueSlug}/items/{itemSlug}/prices', [LeagueItemController::class, 'prices']);
     Route::get('{leagueSlug}/items/{itemSlug}/buckets', [LeagueItemController::class, 'buckets']);
 });

@@ -37,7 +37,7 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
         'Предмет входит в корзину, если его цена не ниже порога. Порог свой для каждой валюты: так дешёвые и шумные предметы не влияют на оценку рынка',
         'Если предмет уже был в корзине в прошлый раз, он остаётся в ней, даже если подешевел ниже порога. Иначе он пропал бы из расчёта как раз тогда, когда его цена сильно двигается',
         'Если в корзине у предмета вообще нет цены, он из неё выпадает',
-        'Количество сделок на попадание в корзину не влияет: самые дорогие предметы торгуются редко, и отбор по обороту почти опустошил бы корзину. Малый оборот учитывается позже, при расчёте доходности',
+        'Количество сделок на попадание в корзину не влияет: самые дорогие предметы торгуются редко, и отбор по обороту почти опустошил бы корзину. Малый оборот учитывается позже, при расчёте дельты цены',
       ],
     },
     {
@@ -46,13 +46,13 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
       paragraphs: ['Рынок мы оцениваем по движению предметов из корзины. Для каждой корзины считаются три числа'],
       terms: [
         {
-          title: 'Доходность рынка',
+          title: 'Дельта цены рынка',
           description:
             'Насколько в среднем изменились цены по сравнению с предыдущей корзиной. Берётся медиана изменений всех предметов, а не среднее, чтобы несколько резких скачков не перекосили результат. Предметы с малым числом сделок учитываются с меньшим весом или не учитываются вовсе. Значение 0,05 примерно означает рост цен на 5%',
         },
         {
           title: 'Предметов в расчёте',
-          description: 'Сколько предметов реально участвовало в расчёте доходности рынка',
+          description: 'Сколько предметов реально участвовало в расчёте дельты цены рынка',
         },
         {
           title: 'Предметов в корзине',
@@ -61,7 +61,7 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
         },
       ],
       list: [
-        'Резкая доходность рынка означает «рыночный день»: сдвинулось почти всё сразу, например скачок цены самой валюты. В такие дни выводы по отдельным предметам ненадёжны',
+        'Резкая дельта цены рынка означает «рыночный день»: сдвинулось почти всё сразу, например скачок цены самой валюты. В такие дни выводы по отдельным предметам ненадёжны',
       ],
     },
     {
@@ -164,7 +164,7 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
         'An item is in the basket if its price is not below the threshold. The threshold is its own for every currency: this way cheap and noisy items do not affect the estimate of the market',
         'If an item was in the basket last time, it stays there even if it got cheaper than the threshold. Otherwise it would drop out of the calculation exactly when its price moves a lot',
         'If an item has no price in the bucket at all, it drops out of the basket',
-        'The number of trades does not affect getting into the basket: the most expensive items are traded rarely, and a selection by turnover would almost empty the basket. A low turnover is taken into account later, when the return is calculated',
+        'The number of trades does not affect getting into the basket: the most expensive items are traded rarely, and a selection by turnover would almost empty the basket. A low turnover is taken into account later, when the price delta is calculated',
       ],
     },
     {
@@ -173,13 +173,13 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
       paragraphs: ['We estimate the market by the movement of the items of the basket. Three numbers are calculated for every bucket'],
       terms: [
         {
-          title: 'Market return',
+          title: 'Market price delta',
           description:
             'How much the prices changed on average compared with the previous bucket. The median of the changes of all items is taken, not the mean, so that a few sharp spikes do not skew the result. Items with few trades count with a lower weight or do not count at all. A value of 0.05 roughly means that prices rose by 5%',
         },
         {
           title: 'Items in the calculation',
-          description: 'How many items actually took part in the calculation of the market return',
+          description: 'How many items actually took part in the calculation of the market price delta',
         },
         {
           title: 'Items in the basket',
@@ -188,7 +188,7 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
         },
       ],
       list: [
-        'A sharp market return means a “market day”: almost everything moved at once, for example a jump in the price of the currency itself. On such days the conclusions about single items are unreliable',
+        'A sharp market price delta means a “market day”: almost everything moved at once, for example a jump in the price of the currency itself. On such days the conclusions about single items are unreliable',
       ],
     },
     {

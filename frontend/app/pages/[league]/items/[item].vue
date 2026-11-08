@@ -1,29 +1,20 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import type { ItemBucketRow } from '~/types/metrics'
-
 // The item page has a link back to the items and the league name links to the overview.
 definePageMeta({ showLeagueNav: false })
 
 const route = useRoute()
 const { t } = useI18n()
 const localePath = useLocalePath()
-const { leagueName } = useLeagueName()
 
 const leagueSlug = computed(() => route.params.league as string)
 const itemSlug = computed(() => route.params.item as string)
-const { currencyName, period } = storeToRefs(useFiltersStore())
 
-// The three requests start together, so the server renders the page after the slowest one.
+// The tabs ask for the summary again; the request is the same, so they share this answer.
 const summaryRequest = useItemSummary(leagueSlug, itemSlug)
-const historyRequest = useItemHistory(leagueSlug, itemSlug)
-const bucketsRequest = useItemBuckets(leagueSlug, itemSlug)
 
-await Promise.all([summaryRequest, historyRequest, bucketsRequest])
+await summaryRequest
 
 const { data: summary, error: summaryError, refresh: refreshSummary } = summaryRequest
-const { data: history, error: historyError, refresh: refreshHistory } = historyRequest
-const { data: buckets, status: bucketsStatus, error: bucketsError, refresh: refreshBuckets, page, setPage } = bucketsRequest
 
 const notFound = computed(() => summaryError.value?.statusCode === 404)
 
@@ -31,50 +22,19 @@ if (import.meta.server && notFound.value) {
   setResponseStatus(useRequestEvent()!, 404)
 }
 
-const periodLabel = computed(() => t(`item.periodSuffix.${period.value}`))
+const basePath = computed(() => localePath(`/${leagueSlug.value}/items/${itemSlug.value}`))
 
-const columns = computed<TableColumn<ItemBucketRow>[]>(() => [
-  { accessorKey: 'bucket', header: t('common.columns.bucket') },
-  { accessorKey: 'price', header: t('common.columns.price') },
-  { accessorKey: 'logReturn', header: t('common.columns.priceChange') },
-  { accessorKey: 'residual', header: t('common.columns.residual') },
-  { accessorKey: 'residualMad', header: t('common.columns.fluctuation') },
-  { accessorKey: 'observations', header: t('common.columns.sample') },
-  { accessorKey: 'units', header: t('common.columns.tradesPerHour') },
+const tabs = computed(() => [
+  // The metrics path is the prefix of the other tab, so it matches exactly only.
+  { label: t('item.tabs.metrics'), to: basePath.value, exact: true },
+  { label: t('item.tabs.prices'), to: `${basePath.value}/prices` },
 ])
 
-const emptyText = computed(() =>
-  (buckets.value?.meta.total ?? 0) > 0 ? t('common.noPage') : t('item.buckets.empty'),
-)
-
-// The title and the description are built from the item and its current price. A missing item
-// is not a page to index, and neither is a later page of the table of buckets.
-const seoTitle = computed(() =>
-  summary.value ? t('seo.item.title', { item: summary.value.item.name, league: leagueName.value }) : t('item.notFound'),
-)
-const seoDescription = computed(() => {
-  if (!summary.value) return t('item.notFoundDescription')
-
-  const params = { item: summary.value.item.name, league: leagueName.value }
-
-  return summary.value.current === null
-    ? t('seo.item.descriptionNoPrice', params)
-    : t('seo.item.description', { ...params, price: formatPrice(summary.value.current.price), currency: currencyName.value ?? '' })
-})
-
-useBreadcrumbSchema(() => [
-  { name: t('layout.leagues'), path: '/' },
-  { name: leagueName.value, path: `/${leagueSlug.value}` },
-  { name: t('league.items'), path: `/${leagueSlug.value}/items` },
-  { name: summary.value?.item.name ?? t('item.notFound') },
-])
-
+// A missing item is not a page to index; the tabs set the title and the description of the rest.
 useSeoMeta({
-  title: seoTitle,
-  description: seoDescription,
-  ogTitle: seoTitle,
-  ogDescription: seoDescription,
-  robots: () => (notFound.value || route.query.page !== undefined ? 'noindex, follow' : undefined),
+  title: () => (notFound.value ? t('item.notFound') : undefined),
+  description: () => (notFound.value ? t('item.notFoundDescription') : undefined),
+  robots: () => (notFound.value ? 'noindex, follow' : undefined),
 })
 </script>
 
@@ -115,130 +75,9 @@ useSeoMeta({
         <UBadge v-if="summary.current?.lowData" color="neutral" variant="subtle">{{ $t('common.lowData') }}</UBadge>
       </div>
 
-      <p v-if="summary.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
+      <UNavigationMenu :items="tabs" />
 
-      <p v-else-if="summary.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
-
-      <template v-else>
-        <i18n-t v-if="summary.current === null" keypath="item.noCurrent" tag="p" scope="global" class="text-muted">
-          <template #date><LocalDateTime :value="summary.lastBucket" /></template>
-        </i18n-t>
-
-        <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <KpiTile :label="$t('item.kpi.price', { currency: currencyName })">{{ formatPrice(summary.current.price) }}</KpiTile>
-          <KpiTile :label="$t('item.kpi.priceChange')">
-            <span :class="returnClass(summary.current.logReturn)">{{ orDash(summary.current.logReturn, formatReturn) }}</span>
-          </KpiTile>
-          <KpiTile :label="$t('item.kpi.residual')">
-            <span :class="returnClass(summary.current.residual)">{{ orDash(summary.current.residual, formatReturn) }}</span>
-            <template v-if="summary.current.residualMad !== null" #note>
-              {{ $t('item.kpi.residualFluctuation', { value: formatPercent(summary.current.residualMad) }) }}
-            </template>
-          </KpiTile>
-          <KpiTile :label="$t('item.kpi.tradesPerHour')">
-            <span :class="weightClass(summary.current.returnWeight)">{{ formatUnits(summary.current.units) }}</span>
-          </KpiTile>
-          <KpiTile :label="$t('item.kpi.sample')">
-            <span :class="summary.current.lowData ? 'text-muted' : ''">{{ summary.current.observations }}</span>
-          </KpiTile>
-          <KpiTile :label="$t('item.kpi.bucket')"><LocalDateTime :value="summary.lastBucket" /></KpiTile>
-        </div>
-
-        <UAlert
-          v-if="historyError"
-          color="error"
-          variant="subtle"
-          icon="i-lucide-triangle-alert"
-          :title="$t('item.chartsLoadError')"
-          :actions="[{ label: $t('common.retry'), onClick: () => refreshHistory() }]"
-        />
-
-        <p v-else-if="history && history.series.length === 0" class="text-muted">{{ $t('item.noSeries') }}</p>
-
-        <template v-else-if="history">
-          <section class="space-y-3">
-            <h3 class="text-lg font-medium">{{ $t('item.priceTitle', { period: periodLabel }) }}</h3>
-            <ItemPriceChart :points="history.series" />
-          </section>
-
-          <section class="space-y-3">
-            <h3 class="flex items-center gap-1.5 text-lg font-medium">
-              {{ $t('item.residualTitle', { period: periodLabel }) }}
-              <InfoTooltip :label="$t('item.residualHelp.label')">
-                <p>{{ $t('item.residualHelp.lineOne') }}</p>
-                <p>{{ $t('item.residualHelp.lineTwo') }}</p>
-              </InfoTooltip>
-            </h3>
-            <ItemResidualChart :points="history.series" />
-          </section>
-        </template>
-
-        <section class="space-y-3">
-          <h3 class="text-lg font-medium">{{ $t('item.beta.title') }}</h3>
-          <p v-if="summary.beta === null" class="text-muted">{{ $t('item.beta.notCalculated') }}</p>
-          <template v-else>
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiTile :label="$t('item.beta.beta')">{{ summary.beta.beta.toFixed(2) }}</KpiTile>
-              <KpiTile :label="$t('item.beta.raw')">{{ summary.beta.rawBeta.toFixed(2) }}</KpiTile>
-              <KpiTile :label="$t('item.beta.rSquared')">{{ orDash(summary.beta.rSquared, (value) => value.toFixed(2)) }}</KpiTile>
-              <KpiTile :label="$t('item.beta.calculated')"><LocalDateTime :value="summary.beta.calculatedAt" /></KpiTile>
-            </div>
-            <p class="text-sm text-muted">
-              {{ $t('item.beta.explanation') }}
-            </p>
-            <ItemBetaChart v-if="history && history.betaHistory.length >= 2" :betas="history.betaHistory" />
-            <p v-else-if="history" class="text-sm text-muted">
-              {{ $t('item.beta.fewRecalculations', { count: history.betaHistory.length }) }}
-            </p>
-          </template>
-        </section>
-
-        <section class="space-y-3">
-          <h3 class="text-lg font-medium">{{ $t('item.buckets.title') }}</h3>
-
-          <UAlert
-            v-if="bucketsError"
-            color="error"
-            variant="subtle"
-            icon="i-lucide-triangle-alert"
-            :title="$t('item.buckets.loadError')"
-            :actions="[{ label: $t('common.retry'), onClick: () => refreshBuckets() }]"
-          />
-
-          <template v-else-if="buckets">
-            <UTable
-              :data="buckets.data"
-              :columns="columns"
-              :ui="{ th: 'align-bottom' }"
-              :loading="bucketsStatus === 'pending'"
-              :empty="emptyText"
-            >
-              <template #bucket-cell="{ row }"><LocalDateTime :value="row.original.bucket" /></template>
-              <template #price-cell="{ row }">{{ formatPrice(row.original.price) }}</template>
-              <template #logReturn-cell="{ row }">
-                <span :class="returnClass(row.original.logReturn)">{{ orDash(row.original.logReturn, formatReturn) }}</span>
-              </template>
-              <template #residual-cell="{ row }">
-                <span :class="returnClass(row.original.residual)">{{ orDash(row.original.residual, formatReturn) }}</span>
-              </template>
-              <template #residualMad-cell="{ row }">{{ orDash(row.original.residualMad, formatPercent) }}</template>
-              <template #units-cell="{ row }">
-                <span :class="weightClass(row.original.returnWeight)">{{ formatUnits(row.original.units) }}</span>
-              </template>
-            </UTable>
-
-            <div v-if="buckets.meta.lastPage > 1" class="flex justify-center">
-              <UPagination
-                :page="page"
-                :total="buckets.meta.total"
-                :items-per-page="buckets.meta.perPage"
-                :sibling-count="1"
-                @update:page="setPage"
-              />
-            </div>
-          </template>
-        </section>
-      </template>
+      <NuxtPage />
     </template>
   </div>
 </template>

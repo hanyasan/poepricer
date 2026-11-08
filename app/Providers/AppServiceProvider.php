@@ -16,6 +16,8 @@ use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
+use App\Repositories\Poe\Exchange\PriceCheck\ExchangeItemPriceHistoryRepository;
+use App\Repositories\Poe\Exchange\PriceCheck\ExchangeItemPriceHistoryRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepository;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Repositories\Poe\PoeLeagueRepository;
@@ -44,6 +46,8 @@ use App\Services\DataServices\Poe\PoeLeagueService;
 use App\Services\DataServices\Poe\PoeLeagueServiceContract;
 use App\Services\DataServices\Poe\PoeVersionService;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
+use App\Services\DataServices\Prices\LeagueItemPricesService;
+use App\Services\DataServices\Prices\LeagueItemPricesServiceContract;
 use App\Services\NinjaImport\NinjaImportService;
 use App\Services\NinjaImport\NinjaImportServiceContract;
 use App\Services\NinjaImport\NinjaLeaguePricerService;
@@ -79,6 +83,8 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeItemDetailRepositoryContract::class => ExchangeItemDetailRepository::class,
         LeagueItemDetailServiceContract::class => LeagueItemDetailService::class,
         LeagueMetricsLookupServiceContract::class => LeagueMetricsLookupService::class,
+        ExchangeItemPriceHistoryRepositoryContract::class => ExchangeItemPriceHistoryRepository::class,
+        LeagueItemPricesServiceContract::class => LeagueItemPricesService::class,
     ];
 
     /**

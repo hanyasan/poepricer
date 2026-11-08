@@ -11,6 +11,7 @@ export function intlLanguage(): string {
 
 const dateFormatters = new Map<string, Intl.DateTimeFormat>()
 const priceFormatters = new Map<string, Intl.NumberFormat>()
+const timeFormatters = new Map<string, Intl.DateTimeFormat>()
 
 /** A short date with the time, in the time zone of the browser; the same one for the whole app. */
 export function dateTimeFormatter(language: string = intlLanguage()): Intl.DateTimeFormat {
@@ -88,4 +89,22 @@ export function formatBinEdge(value: number): string {
 /** Whether a return falls into a bar of the histogram: the lower edge is in, the upper one is out. */
 export function binContains(bin: { from: number | null; to: number | null }, value: number): boolean {
   return (bin.from === null || value >= bin.from) && (bin.to === null || value < bin.to)
+}
+
+/**
+ * A moment of the time axis of a chart: the time of day for a window of a day or shorter,
+ * the date with the time for a longer one.
+ */
+export function formatChartTime(moment: number, windowHours: number): string {
+  if (windowHours > 24) return dateTimeFormatter().format(moment)
+
+  const language = intlLanguage()
+  let formatter = timeFormatters.get(language)
+
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat(language, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    timeFormatters.set(language, formatter)
+  }
+
+  return formatter.format(moment)
 }
