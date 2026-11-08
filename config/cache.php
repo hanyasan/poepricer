@@ -8,6 +8,7 @@ use App\DataTransferObjects\RepositoryObjects\ExchangeTypeDto;
 use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
+use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueUnusualMoveDto;
@@ -155,6 +156,7 @@ return [
         LeagueOverviewDto::class,
         LeagueItemMoveDto::class,
         LeagueUnusualMoveDto::class,
+        LeagueItemCategoriesDto::class,
         MetricPeriodEnum::class,
     ],
 

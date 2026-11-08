@@ -5,6 +5,7 @@ namespace App\Repositories\Poe\Exchange\ExchangeItem;
 use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
 use App\Models\Poe\Exchange\ExchangeItem as ExchangeItemModel;
 use App\Utility\Mapper\MapperServiceContract;
+use Illuminate\Database\Eloquent\Builder;
 
 final readonly class ExchangeItemRepository implements ExchangeItemRepositoryContract
 {
@@ -54,5 +55,33 @@ final readonly class ExchangeItemRepository implements ExchangeItemRepositoryCon
         return $item === null
             ? null
             : $this->mapper->mapEloquentModel(ExchangeItemDto::class, $item);
+    }
+
+    /**
+     * @return string[]
+     */
+    #[\Override]
+    public function getCategoriesByLeague(int $leagueId): array
+    {
+        return $this->model->newQuery()
+            ->where('poe_league_id', $leagueId)
+            ->whereNotNull('poe_category')
+            ->where('poe_category', '<>', '')
+            ->distinct()
+            ->orderBy('poe_category')
+            ->pluck('poe_category')
+            ->map(static fn (mixed $category): string => (string) $category)
+            ->all();
+    }
+
+    #[\Override]
+    public function hasUncategorizedByLeague(int $leagueId): bool
+    {
+        return $this->model->newQuery()
+            ->where('poe_league_id', $leagueId)
+            ->where(static function (Builder $query): void {
+                $query->whereNull('poe_category')->orWhere('poe_category', '');
+            })
+            ->exists();
     }
 }

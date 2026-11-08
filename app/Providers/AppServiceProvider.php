@@ -8,6 +8,8 @@ use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepository;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepositoryContract;
+use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepository;
+use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepository;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepository;
@@ -22,6 +24,10 @@ use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedService;
 use App\Services\DataServices\Metrics\ExchangeMetricsItemSeedServiceContract;
 use App\Services\DataServices\Metrics\ExchangeMetricsService;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
+use App\Services\DataServices\Metrics\LeagueItemsService;
+use App\Services\DataServices\Metrics\LeagueItemsServiceContract;
+use App\Services\DataServices\Metrics\LeagueMetricsLookupService;
+use App\Services\DataServices\Metrics\LeagueMetricsLookupServiceContract;
 use App\Services\DataServices\Metrics\LeagueOverviewService;
 use App\Services\DataServices\Metrics\LeagueOverviewServiceContract;
 use App\Services\DataServices\Metrics\PriceCheckCurrencyMixService;
@@ -61,6 +67,9 @@ final class AppServiceProvider extends ServiceProvider
         ExchangeMetricsItemSeedServiceContract::class => ExchangeMetricsItemSeedService::class,
         PoeLeagueServiceContract::class => PoeLeagueService::class,
         LeagueOverviewServiceContract::class => LeagueOverviewService::class,
+        ExchangeItemTableRepositoryContract::class => ExchangeItemTableRepository::class,
+        LeagueItemsServiceContract::class => LeagueItemsService::class,
+        LeagueMetricsLookupServiceContract::class => LeagueMetricsLookupService::class,
     ];
 
     /**

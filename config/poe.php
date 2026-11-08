@@ -17,11 +17,16 @@ return [
         'beta_prior_weight' => (int) env('METRICS_BETA_PRIOR_WEIGHT', 14),
         'min_hourly_units' => (float) env('METRICS_MIN_HOURLY_UNITS', 2.0),
         'full_weight_hourly_units' => (float) env('METRICS_FULL_WEIGHT_HOURLY_UNITS', 20.0),
+        'items_table_min_observations' => (int) env('ITEMS_TABLE_MIN_OBSERVATIONS', 6),
     ],
     'overview' => [
         'top_limit' => (int) env('OVERVIEW_TOP_LIMIT', 10),
         'unusual_limit' => (int) env('OVERVIEW_UNUSUAL_LIMIT', 20),
         'unusual_residual_multiplier' => (float) env('OVERVIEW_UNUSUAL_RESIDUAL_MULTIPLIER', 2.0),
+    ],
+    'items' => [
+        'per_page' => (int) env('ITEMS_PER_PAGE', 50),
+        'max_per_page' => (int) env('ITEMS_MAX_PER_PAGE', 100),
     ],
     'compact' => [
         'days_stay' => (int) env('COMPACT_DAYS_STAY', 9),

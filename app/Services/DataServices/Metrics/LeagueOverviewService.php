@@ -5,7 +5,6 @@ namespace App\Services\DataServices\Metrics;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
-use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueCurrencyDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
@@ -16,15 +15,10 @@ use App\Enums\Tags\BetasMetricsTagEnum;
 use App\Enums\Tags\BucketMetricsTagEnum;
 use App\Enums\Tags\ExchangePriceTagEnum;
 use App\Enums\Tags\MetricsItemTagEnum;
-use App\Enums\Tags\PoeLeagueTagEnum;
-use App\Exceptions\League\LeagueNotFoundException;
-use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
 use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
-use App\Repositories\Poe\PoeLeagueRepositoryContract;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Validation\ValidationException;
 
 final readonly class LeagueOverviewService implements LeagueOverviewServiceContract
 {
@@ -33,8 +27,7 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
     private const int DAY_HOURS = 24;
 
     public function __construct(
-        private PoeLeagueRepositoryContract $leagueRepository,
-        private ExchangeMetricsItemRepositoryContract $metricsItemRepository,
+        private LeagueMetricsLookupServiceContract $lookupService,
         private ExchangeMetricsRepositoryContract $metricsRepository,
         private PriceCheckRepositoryContract $priceCheckRepository,
     ) {}
@@ -45,23 +38,22 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
     #[\Override]
     public function currencies(string $leagueSlug): array
     {
-        $league = $this->findLeague($leagueSlug);
+        $league = $this->lookupService->findLeague($leagueSlug);
 
         return array_map(
             static fn (ExchangeMetricsItemDto $metricsItem): LeagueCurrencyDto => new LeagueCurrencyDto(
                 $metricsItem->exchange_item->trade_id,
                 $metricsItem->exchange_item->name,
             ),
-            $this->metricsItems($league->id),
+            $this->lookupService->metricsItems($league->id),
         );
     }
 
     #[\Override]
     public function overview(string $leagueSlug, ?string $currency, MetricPeriodEnum $period): LeagueOverviewDto
     {
-        $league = $this->findLeague($leagueSlug);
-        $metricsItems = $this->metricsItems($league->id);
-        $metricsItem = $this->pickMetricsItem($metricsItems, $currency);
+        $league = $this->lookupService->findLeague($leagueSlug);
+        $metricsItem = $this->lookupService->pickMetricsItem($league->id, $currency);
 
         if ($metricsItem === null) {
             return $this->emptyOverview($league->id, null, $period);
@@ -79,67 +71,6 @@ final readonly class LeagueOverviewService implements LeagueOverviewServiceContr
             CacheTtlEnum::HOUR->jiggle(),
             fn (): LeagueOverviewDto => $this->buildOverview($league->id, $metricsItem, $period),
         );
-    }
-
-    private function findLeague(string $slug): PoeLeagueDto
-    {
-        return Cache::tags([
-            PoeLeagueTagEnum::league->name,
-            PoeLeagueTagEnum::league_get->name,
-        ])->remember(
-            'leagueBySlug:'.$slug,
-            CacheTtlEnum::HOUR->jiggle(),
-            fn (): PoeLeagueDto => $this->leagueRepository->findActiveBySlug($slug) ?? throw new LeagueNotFoundException,
-        );
-    }
-
-    /**
-     * Metrics items of the league with the default main currency first.
-     *
-     * @return ExchangeMetricsItemDto[]
-     */
-    private function metricsItems(int $leagueId): array
-    {
-        return Cache::tags([
-            MetricsItemTagEnum::metrics_items_league_id->name.$leagueId,
-        ])->remember(
-            'leagueMetricsItems:'.$leagueId,
-            CacheTtlEnum::HOUR->jiggle(),
-            function () use ($leagueId): array {
-                $defaultTradeId = (string) config('poe.base.default_main_trade_id');
-                $metricsItems = $this->metricsItemRepository->getAllByLeague($leagueId);
-
-                usort(
-                    $metricsItems,
-                    static fn (ExchangeMetricsItemDto $a, ExchangeMetricsItemDto $b): int => (int) ($b->exchange_item->trade_id === $defaultTradeId)
-                        <=> (int) ($a->exchange_item->trade_id === $defaultTradeId),
-                );
-
-                return $metricsItems;
-            },
-        );
-    }
-
-    /**
-     * @param  ExchangeMetricsItemDto[]  $metricsItems
-     *
-     * @throws ValidationException when the currency is not a metric currency of the league
-     */
-    private function pickMetricsItem(array $metricsItems, ?string $currency): ?ExchangeMetricsItemDto
-    {
-        if ($currency === null) {
-            return $metricsItems[0] ?? null;
-        }
-
-        foreach ($metricsItems as $metricsItem) {
-            if ($metricsItem->exchange_item->trade_id === $currency) {
-                return $metricsItem;
-            }
-        }
-
-        throw ValidationException::withMessages([
-            'currency' => 'The league has no such metric currency.',
-        ]);
     }
 
     private function buildOverview(int $leagueId, ExchangeMetricsItemDto $metricsItem, MetricPeriodEnum $period): LeagueOverviewDto

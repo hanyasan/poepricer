@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { MetricPeriod } from '~/types/metrics'
 
+withDefaults(defineProps<{ showPeriod?: boolean }>(), { showPeriod: true })
+
 const filters = useFiltersStore()
 const { currencies, currency, period } = storeToRefs(filters)
 
@@ -22,6 +24,6 @@ const periodItems: { label: string; value: MetricPeriod }[] = [
       class="w-48"
       @update:model-value="currency = $event"
     />
-    <USelect v-model="period" :items="periodItems" class="w-36" />
+    <USelect v-if="showPeriod" v-model="period" :items="periodItems" class="w-36" />
   </div>
 </template>

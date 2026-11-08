@@ -13,6 +13,7 @@ use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\League\PoeLeagueDto;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Enums\Tags\ExchangePriceTagEnum;
+use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Enums\Tags\PoeLeagueTagEnum;
 use App\Exceptions\Mapping\MapInvalidSourceException;
 use App\Exceptions\Mapping\MappingErrorException;
@@ -48,6 +49,8 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         ExtendedPoeLeagueDto $league,
     ): void {
         $exchangeTypes = $this->exchangeTypeService->getByVersion($league->poe_version->id);
+
+        $categoriesBefore = $this->itemCategoriesSnapshot($league->id);
 
         $imported = DB::transaction(function () use ($league, $exchangeTypes) {
             $priceCheck = $this->priceCheckRepository->createPriceCheck($league->id);
@@ -85,6 +88,10 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
             ExchangePriceTagEnum::price_get->name,
             ExchangePriceTagEnum::price_league_id->name.$league->id,
         ])->flush();
+
+        if ($categoriesBefore !== $this->itemCategoriesSnapshot($league->id)) {
+            Cache::tags([ItemCategoryTagEnum::item_categories_league_id->name.$league->id])->flush();
+        }
 
         Log::info(
             'Prices for league '.
@@ -143,6 +150,20 @@ final readonly class NinjaImportService implements NinjaImportServiceContract
         });
 
         Cache::tags([PoeLeagueTagEnum::league_version->name.$version->id])->flush();
+    }
+
+    /**
+     * Item categories of the league as the categories endpoint sees them, to find out
+     * whether an import changed them.
+     *
+     * @return array{categories: string[], hasUncategorized: bool}
+     */
+    private function itemCategoriesSnapshot(int $leagueId): array
+    {
+        return [
+            'categories' => $this->exchangeItemRepository->getCategoriesByLeague($leagueId),
+            'hasUncategorized' => $this->exchangeItemRepository->hasUncategorizedByLeague($leagueId),
+        ];
     }
 
     /**

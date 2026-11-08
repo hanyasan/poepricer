@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\League;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LeagueItemsRequest;
 use App\Http\Requests\LeagueOverviewRequest;
 use App\Http\Resources\LeagueCurrencyResource;
+use App\Http\Resources\LeagueItemCategoriesResource;
+use App\Http\Resources\LeagueItemsPageResource;
 use App\Http\Resources\LeagueOverviewResource;
 use App\Http\Resources\MainPageLeagueResource;
+use App\Services\DataServices\Metrics\LeagueItemsServiceContract;
 use App\Services\DataServices\Metrics\LeagueOverviewServiceContract;
 use App\Services\DataServices\Poe\PoeLeagueServiceContract;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +46,27 @@ final class LeagueController extends Controller
         return \response()->json(
             new LeagueOverviewResource(
                 $leagueOverviewService->overview($leagueSlug, $request->currency(), $request->period())
+            )
+        );
+    }
+
+    public function itemCategories(
+        string $leagueSlug,
+        LeagueItemsServiceContract $leagueItemsService,
+    ): JsonResponse {
+        return \response()->json(
+            new LeagueItemCategoriesResource($leagueItemsService->categories($leagueSlug))
+        );
+    }
+
+    public function items(
+        string $leagueSlug,
+        LeagueItemsRequest $request,
+        LeagueItemsServiceContract $leagueItemsService,
+    ): JsonResponse {
+        return \response()->json(
+            new LeagueItemsPageResource(
+                $leagueItemsService->items($leagueSlug, $request->filter(), $request->sort(), $request->pagination())
             )
         );
     }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services\NinjaImport;
 
 use App\DataTransferObjects\RepositoryObjects\League\ExtendedPoeLeagueDto;
+use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Enums\Tags\PoeLeagueTagEnum;
 use App\Models\Poe\Exchange\ExchangeItem;
 use App\Models\Poe\Exchange\ExchangeItemPrice;
@@ -15,6 +16,7 @@ use App\Models\Poe\LeagueCheckRule;
 use App\Models\Poe\PoeLeague;
 use App\Models\Poe\PoeVersion;
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
+use App\Services\DataServices\Metrics\LeagueItemsServiceContract;
 use App\Services\NinjaImport\NinjaImportServiceContract;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -473,6 +475,61 @@ class NinjaImportServiceTest extends FeatureTestCase
             'poe_category' => 'type-alpha',
             'poe_league_id' => $league->id,
         ]);
+    }
+
+    public function test_it_flushes_the_cached_item_categories_when_an_import_adds_a_category(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+        $this->exchangeItem($league, 'item-a', 'Item A');
+        $itemsService = $this->app->make(LeagueItemsServiceContract::class);
+        $this->assertSame(['type-alpha'], $itemsService->categories($league->slug)->categories);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            items: [['id' => 'item-b', 'name' => 'Item B', 'category' => 'type-beta']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertSame(['type-alpha', 'type-beta'], $itemsService->categories($league->slug)->categories);
+    }
+
+    public function test_it_keeps_the_cached_item_categories_when_an_import_changes_none(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $this->exchangeType('type-alpha', $version);
+        $this->exchangeItem($league, 'item-a', 'Item A');
+        $tag = ItemCategoryTagEnum::item_categories_league_id->name.$league->id;
+        $this->app->make(LeagueItemsServiceContract::class)->categories($league->slug);
+        Cache::tags([$tag])->put('sentinel', true, 60);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            items: [['id' => 'item-a', 'name' => 'Item A renamed', 'category' => 'type-alpha']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertTrue(Cache::tags([$tag])->get('sentinel'));
+    }
+
+    public function test_it_keeps_the_cached_item_categories_of_other_leagues(): void
+    {
+        $version = $this->versionRow('poe2');
+        $league = $this->importLeague('League Two', $version);
+        $other = $this->importLeague('League Three', $version, 'league-three');
+        $this->exchangeType('type-alpha', $version);
+        $otherTag = ItemCategoryTagEnum::item_categories_league_id->name.$other->id;
+        Cache::tags([$otherTag])->put('sentinel', true, 60);
+
+        $this->fakeExchangePrices(fn (): array => $this->exchangePayload(
+            items: [['id' => 'item-b', 'name' => 'Item B', 'category' => 'type-beta']],
+        ));
+
+        $this->service()->checkExchangePrices($this->leagueDto($league));
+
+        $this->assertTrue(Cache::tags([$otherTag])->get('sentinel'));
     }
 
     public function test_it_persists_a_price_from_the_matching_line(): void

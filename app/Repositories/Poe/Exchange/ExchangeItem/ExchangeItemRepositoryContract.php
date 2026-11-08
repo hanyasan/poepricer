@@ -22,4 +22,16 @@ interface ExchangeItemRepositoryContract
     public function upsert(array $insertData): void;
 
     public function findByTradeId(int $leagueId, string $tradeId): ?ExchangeItemDto;
+
+    /**
+     * Distinct non-empty categories of the items of the league, alphabetically.
+     *
+     * @return string[]
+     */
+    public function getCategoriesByLeague(int $leagueId): array;
+
+    /**
+     * Whether the league has items whose category is null or empty.
+     */
+    public function hasUncategorizedByLeague(int $leagueId): bool;
 }

@@ -24,3 +24,13 @@ export function weightClass(weight: number | null): string {
 export function formatPrice(value: number): string {
   return priceFormatter.format(value)
 }
+
+/** An unsigned percent for a scale such as a MAD: 0.0049 becomes "0.49%". */
+export function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(2)}%`
+}
+
+/** A value that may be missing, shown as a dash. */
+export function orDash<T>(value: T | null, format: (value: T) => string): string {
+  return value === null ? '—' : format(value)
+}
