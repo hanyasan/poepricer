@@ -100,7 +100,7 @@ export interface LeagueOverview {
   period: MetricPeriod
   lastBucket: string | null
   kpi: {
-    marketReturn12h: number | null
+    marketReturnLastBucket: number | null
     marketReturn7d: number | null
     basketSize: number
     basketTotal: number

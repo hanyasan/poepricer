@@ -20,7 +20,7 @@ final class LeagueOverviewResource extends BaseResource
             'period' => $overview->period->value,
             'lastBucket' => self::toDefaultResponseDatetime($overview->lastBucket),
             'kpi' => [
-                'marketReturn12h' => $overview->marketReturn12h,
+                'marketReturnLastBucket' => $overview->marketReturnLastBucket,
                 'marketReturn7d' => $overview->marketReturn7d,
                 'basketSize' => $overview->basketSize,
                 'basketTotal' => $overview->basketTotal,

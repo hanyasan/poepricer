@@ -11,11 +11,11 @@ const { data: overview, status, refresh } = await useLeagueOverview(slug)
 const columns: TableColumn<UnusualMove>[] = [
   { accessorKey: 'name', header: 'Предмет' },
   { accessorKey: 'price', header: 'Цена' },
-  { accessorKey: 'logReturn', header: 'За 12ч' },
+  { accessorKey: 'logReturn', header: 'Δ цены' },
   { accessorKey: 'residual', header: 'Остаток' },
-  { accessorKey: 'ratio', header: 'Остаток / MAD' },
+  { accessorKey: 'ratio', header: 'Кратность' },
   { accessorKey: 'beta', header: 'β' },
-  { accessorKey: 'observations', header: 'Наблюдений' },
+  { accessorKey: 'observations', header: 'Выборка' },
   { accessorKey: 'units', header: 'Сделок/ч' },
 ]
 </script>
@@ -39,9 +39,9 @@ const columns: TableColumn<UnusualMove>[] = [
 
     <template v-else>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile label="Доходность рынка, 12ч">
-          <span v-if="overview.kpi.marketReturn12h !== null" :class="returnClass(overview.kpi.marketReturn12h)">
-            {{ formatReturn(overview.kpi.marketReturn12h) }}
+        <KpiTile label="Доходность последней корзины">
+          <span v-if="overview.kpi.marketReturnLastBucket !== null" :class="returnClass(overview.kpi.marketReturnLastBucket)">
+            {{ formatReturn(overview.kpi.marketReturnLastBucket) }}
           </span>
           <span v-else class="text-muted">—</span>
         </KpiTile>
@@ -69,11 +69,11 @@ const columns: TableColumn<UnusualMove>[] = [
         <section class="space-y-3">
           <h2 class="text-lg font-medium">Необычные движения</h2>
           <p class="text-sm text-muted">
-            Предметы, чей остаток за последние 12ч больше двух своих residual_mad. Цены в {{ currencyName }}.
+            Предметы, чей остаток в последней корзине больше двух обычных для них колебаний. Цены в {{ currencyName }}.
             Серым выделено число сделок у предметов с малым объёмом: их доходности менее надёжны.
           </p>
           <p v-if="overview.unusualMoves.length === 0" class="text-muted">Сейчас таких предметов нет.</p>
-          <UTable v-else :data="overview.unusualMoves" :columns="columns">
+          <UTable v-else :data="overview.unusualMoves" :columns="columns" :ui="{ th: 'align-bottom' }">
             <template #name-cell="{ row }">
               <NuxtLink :to="`/${slug}/items/${row.original.slug}`" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
             </template>
@@ -93,8 +93,8 @@ const columns: TableColumn<UnusualMove>[] = [
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2">
-          <ItemMoveList title="Топ роста за 12ч" :moves="overview.topGainers" :league-slug="slug" />
-          <ItemMoveList title="Топ падения за 12ч" :moves="overview.topLosers" :league-slug="slug" />
+          <ItemMoveList title="Топ роста за последнюю корзину" :moves="overview.topGainers" :league-slug="slug" />
+          <ItemMoveList title="Топ падения за последнюю корзину" :moves="overview.topLosers" :league-slug="slug" />
         </section>
       </template>
     </template>

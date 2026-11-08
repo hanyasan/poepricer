@@ -5,3 +5,14 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
 }
+
+@layer base {
+  html {
+    font-size: 106.25%;
+  }
+
+  body {
+    letter-spacing: 0.01em;
+    line-height: 1.65;
+  }
+}

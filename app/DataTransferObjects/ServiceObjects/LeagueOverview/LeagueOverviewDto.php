@@ -17,7 +17,7 @@ final readonly class LeagueOverviewDto
         public ?string $currency,
         public MetricPeriodEnum $period,
         public ?string $lastBucket,
-        public ?float $marketReturn12h,
+        public ?float $marketReturnLastBucket,
         public ?float $marketReturn7d,
         public int $basketSize,
         public int $basketTotal,

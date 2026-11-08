@@ -9,7 +9,6 @@ definePageMeta({ usesPeriod: false })
 const route = useRoute()
 
 const slug = computed(() => route.params.league as string)
-const { currencyName } = storeToRefs(useFiltersStore())
 
 // useFetch makes the server wait for the response before it renders the page.
 const { data: items, status, error, refresh, search, category, uncategorized, sort, page, setSearch, setCategory, setSort, setPage } =
@@ -22,11 +21,11 @@ const NO_CATEGORY = 'uncategorized'
 const columns: TableColumn<ItemMetricRow>[] = [
   { accessorKey: 'name', header: 'Предмет' },
   { accessorKey: 'price', header: 'Цена' },
-  { accessorKey: 'logReturn', header: 'log_return' },
-  { accessorKey: 'residual', header: 'residual' },
-  { accessorKey: 'residualMad', header: 'residual_mad' },
+  { accessorKey: 'logReturn', header: 'Δ цены' },
+  { accessorKey: 'residual', header: 'Остаток' },
+  { accessorKey: 'residualMad', header: 'Колебание' },
   { accessorKey: 'beta', header: 'β' },
-  { accessorKey: 'observations', header: 'observations' },
+  { accessorKey: 'observations', header: 'Выборка' },
   { accessorKey: 'units', header: 'Сделок/ч' },
   { id: 'sparkline', header: 'Цена, 7д' },
 ]
@@ -35,11 +34,11 @@ const columns: TableColumn<ItemMetricRow>[] = [
 const sortableColumns: { field: ItemsSortField; label: string }[] = [
   { field: 'name', label: 'Предмет' },
   { field: 'price', label: 'Цена' },
-  { field: 'logReturn', label: 'log_return' },
-  { field: 'residual', label: 'residual' },
-  { field: 'residualMad', label: 'residual_mad' },
+  { field: 'logReturn', label: 'Δ цены' },
+  { field: 'residual', label: 'Остаток' },
+  { field: 'residualMad', label: 'Колебание' },
   { field: 'beta', label: 'β' },
-  { field: 'observations', label: 'observations' },
+  { field: 'observations', label: 'Выборка' },
   { field: 'units', label: 'Сделок/ч' },
 ]
 
@@ -157,14 +156,27 @@ const emptyText = computed(() => {
         </UButton>
       </div>
 
-      <p class="text-sm text-muted">
-        Цены в {{ currencyName }}. Найдено: {{ items.meta.total }}. Строки с необычным остатком подсвечены (остаток больше двух
-        residual_mad), «мало данных» — у предмета мало наблюдений, серым выделено число сделок у предметов с малым объёмом.
+      <p class="flex items-center gap-1.5 text-sm text-muted">
+        Найдено: {{ items.meta.total }}
+        <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
+          <NuxtLink to="/about/metrics" aria-label="Что означают подсветка и пометки в таблице" class="inline-flex hover:text-primary">
+            <UIcon name="i-lucide-circle-help" class="size-4" />
+          </NuxtLink>
+          <template #content>
+            <div class="max-w-xs space-y-1 text-sm leading-relaxed">
+              <p>Строки с необычным остатком подсвечены: остаток больше двух обычных колебаний предмета</p>
+              <p>«Мало данных»: у предмета мало наблюдений</p>
+              <p>Серым выделено число сделок у предметов с малым объёмом</p>
+              <p class="text-muted">Нажмите, чтобы открыть описание метрик</p>
+            </div>
+          </template>
+        </UTooltip>
       </p>
 
       <UTable
         :data="items.data"
         :columns="columns"
+        :ui="{ th: 'align-bottom' }"
         :meta="tableMeta"
         :loading="status === 'pending'"
         :empty="emptyText"
@@ -172,12 +184,12 @@ const emptyText = computed(() => {
         <template v-for="column in sortableColumns" #[`${column.field}-header`]>
           <button
             type="button"
-            class="inline-flex items-center gap-1 font-semibold hover:text-primary"
+            class="inline-flex items-end gap-1 text-left font-semibold hover:text-primary"
             :aria-label="sortLabel(column.field, column.label)"
             @click="toggleSort(column.field)"
           >
             {{ column.label }}
-            <UIcon :name="sortIcon(column.field)" class="size-4" :class="sort.field === column.field ? 'text-primary' : 'text-muted'" />
+            <UIcon :name="sortIcon(column.field)" class="mb-0.5 size-4 shrink-0" :class="sort.field === column.field ? 'text-primary' : 'text-muted'" />
           </button>
         </template>
 

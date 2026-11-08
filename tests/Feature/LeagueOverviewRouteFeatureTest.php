@@ -80,7 +80,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         $this->assertSame('7d', $json['period']);
         $this->assertSame('2030-01-10T12:00:00+00:00', $json['lastBucket']);
         $this->assertSame(
-            ['marketReturn12h' => -0.0048, 'marketReturn7d' => 0.0052, 'basketSize' => 42, 'basketTotal' => 42, 'lastSnapshotAt' => '2030-01-10T12:10:00+00:00'],
+            ['marketReturnLastBucket' => -0.0048, 'marketReturn7d' => 0.0052, 'basketSize' => 42, 'basketTotal' => 42, 'lastSnapshotAt' => '2030-01-10T12:10:00+00:00'],
             [...$json['kpi'], 'marketReturn7d' => round($json['kpi']['marketReturn7d'], 6)],
         );
         $this->assertSame(
@@ -111,7 +111,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
 
         foreach ([$day, $week, $all] as $overview) {
             $this->assertEqualsWithDelta(0.6, $overview['kpi']['marketReturn7d'], 1e-9);
-            $this->assertSame(0.3, $overview['kpi']['marketReturn12h']);
+            $this->assertSame(0.3, $overview['kpi']['marketReturnLastBucket']);
         }
     }
 
@@ -199,7 +199,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         $json = $this->getJson("/api/leagues/{$league->slug}/overview?currency=mirror")->assertOk()->json();
 
         $this->assertSame('mirror', $json['currency']);
-        $this->assertSame(-0.4, $json['kpi']['marketReturn12h']);
+        $this->assertSame(-0.4, $json['kpi']['marketReturnLastBucket']);
     }
 
     public function test_default_currency_is_used_when_none_is_given(): void
@@ -248,7 +248,7 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
                 'currency' => null,
                 'period' => '7d',
                 'lastBucket' => null,
-                'kpi' => ['marketReturn12h' => null, 'marketReturn7d' => null, 'basketSize' => 0, 'basketTotal' => 0, 'lastSnapshotAt' => null],
+                'kpi' => ['marketReturnLastBucket' => null, 'marketReturn7d' => null, 'basketSize' => 0, 'basketTotal' => 0, 'lastSnapshotAt' => null],
                 'marketReturnSeries' => [],
                 'unusualMoves' => [],
                 'topGainers' => [],

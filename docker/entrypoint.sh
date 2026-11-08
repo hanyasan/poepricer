@@ -38,6 +38,12 @@ done
 # Only one container should migrate; queue workers and the scheduler set RUN_MIGRATIONS=false.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force
+
+    # Cached DTOs are serialized objects: after a release that changes a DTO or its
+    # schema, the old entries unserialize with uninitialized properties and break
+    # responses until the TTL expires. The cache lives in its own Redis database
+    # (REDIS_CACHE_DB), so this does not touch queues or Horizon.
+    php artisan cache:clear
 fi
 
 # Cache config, events and routes in production. This has to happen here and not
