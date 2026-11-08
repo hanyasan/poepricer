@@ -23,9 +23,10 @@ const groups = computed(() =>
     .filter((group) => group.leagues.length > 0),
 )
 
-function lastReturn(league: League): number | null {
+/** Market return over the 7-day series: the log returns of the buckets add up. */
+function weekReturn(league: League): number | null {
   const series = league.marketReturnSeries
-  return series.length > 0 ? series[series.length - 1]!.value : null
+  return series.length > 0 ? series.reduce((sum, point) => sum + point.value, 0) : null
 }
 </script>
 
@@ -77,8 +78,8 @@ function lastReturn(league: League): number | null {
 
               <div class="mt-3 flex items-end justify-between text-sm">
                 <span class="text-muted">{{ $t('home.return7d') }}</span>
-                <span v-if="lastReturn(league) !== null" :class="returnClass(lastReturn(league)!)" class="font-medium">
-                  {{ formatReturn(lastReturn(league)!) }}
+                <span v-if="weekReturn(league) !== null" :class="returnClass(weekReturn(league)!)" class="font-medium">
+                  {{ formatReturn(weekReturn(league)!) }}
                 </span>
               </div>
               <MarketReturnSparkline :points="league.marketReturnSeries" />
