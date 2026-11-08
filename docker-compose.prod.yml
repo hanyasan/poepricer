@@ -3,17 +3,15 @@ name: poepricer-prod
 # Production stack: Caddy (TLS) -> Nuxt -> nginx -> php-fpm, Horizon for queues
 # and the scheduler. Only Caddy is published; Laravel is reachable from the
 # compose network alone. There is no `test` container.
-# Usage: docker compose -f docker-compose.prod.yml up -d --build
+#
+# The server never builds images: this file only references them. They are
+# built on a workstation with docker-compose.build.yml and shipped by
+# docker/deploy.sh (docker save | ssh | docker load). IMAGE_TAG picks the
+# release; the deploy script sets it, the default is only a fallback.
+# Usage on the server: IMAGE_TAG=<tag> docker compose -f docker-compose.prod.yml up -d --no-build
 
 x-app: &app
-  build:
-    context: .
-    target: production
-    args:
-      PHP_VARIANT: fpm
-      UID: ${UID:-1000}
-      GID: ${GID:-1000}
-  image: poepricer-app:production
+  image: poepricer-app:${IMAGE_TAG:-production}
   env_file:
     - .env.production
   restart: unless-stopped
@@ -39,14 +37,7 @@ services:
       start_period: 60s
 
   nginx:
-    build:
-      context: .
-      target: nginx
-      args:
-        PHP_VARIANT: fpm
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
-    image: poepricer-nginx:production
+    image: poepricer-nginx:${IMAGE_TAG:-production}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/nginx-health || exit 1"]
@@ -61,12 +52,7 @@ services:
   # Nuxt SPA and the Nitro server that proxies /api/** to nginx. Not published:
   # Caddy is the only entry point.
   frontend:
-    build:
-      context: ./frontend
-      target: production
-      args:
-        NUXT_API_BASE: http://nginx
-    image: poepricer-frontend:production
+    image: poepricer-frontend:${IMAGE_TAG:-production}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/_health || exit 1"]
