@@ -55,7 +55,7 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
                     return false;
                 }
 
-                $minutesCheck -= $this->executionLag;
+                $minutesCheck += $this->executionLag;
 
                 return is_null($latestCheck) || CarbonImmutable::now()->greaterThanOrEqualTo(
                     CarbonImmutable::parse($latestCheck)->addMinutes($minutesCheck)
