@@ -13,3 +13,20 @@ storage/logs
 storage/framework/cache
 storage/framework/sessions
 storage/framework/views
+# Not needed at runtime. The frontend has its own image (context ./frontend);
+# without this line its sources and node_modules end up in the PHP image.
+frontend
+tests
+.agents
+.claude
+.claude-spec
+.codex
+.mcp.json
+AGENTS.md
+CLAUDE.md
+boost.json
+README.md
+temp.md
+phpunit.xml
+psalm.xml
+.phpunit.result.cache

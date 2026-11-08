@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Builds the production images on this machine and ships them to the server
-# over SSH (no registry). The server only loads images and runs compose.
+# over SSH (no registry). The server only receives images and runs compose.
+# Images are sent with `docker pussh` (https://github.com/psviderski/unregistry):
+# it starts a temporary registry on the server over an SSH tunnel and uploads
+# only the layers the server does not have yet. The server needs the containerd
+# image store (Docker 25+) and the SSH user must be allowed to run docker.
+# Install the plugin once: copy docker-pussh to ~/.docker/cli-plugins/ and chmod +x it.
 #
 #   DEPLOY_HOST=user@server docker/deploy.sh
 #
@@ -14,6 +19,11 @@ set -euo pipefail
 : "${DEPLOY_HOST:?Set DEPLOY_HOST, e.g. user@server}"
 DEPLOY_PATH="${DEPLOY_PATH:-poepricer}"
 export DEPLOY_PLATFORM="${DEPLOY_PLATFORM:-linux/amd64}"
+
+if ! docker pussh --version >/dev/null 2>&1; then
+    echo "The docker pussh plugin is not installed, see the header of this script" >&2
+    exit 1
+fi
 
 cd "$(dirname "$0")/.."
 
@@ -36,12 +46,25 @@ scp -q docker/caddy/Caddyfile "${DEPLOY_HOST}:${DEPLOY_PATH}/docker/caddy/Caddyf
 ssh "$DEPLOY_HOST" "test -f '${DEPLOY_PATH}/.env.production'" \
     || { echo "Missing ${DEPLOY_PATH}/.env.production on the server" >&2; exit 1; }
 
-echo "==> Shipping images"
-docker save \
-    "poepricer-app:${IMAGE_TAG}" \
-    "poepricer-nginx:${IMAGE_TAG}" \
-    "poepricer-frontend:${IMAGE_TAG}" \
-    | gzip | ssh "$DEPLOY_HOST" 'gunzip | docker load'
+echo "==> Shipping images (only the layers missing on the server are sent)"
+shipPids=()
+for imageName in app nginx frontend; do
+    # One connection per image: a single TCP flow on a lossy link is slow, three run faster.
+    (
+        docker pussh "poepricer-${imageName}:${IMAGE_TAG}" "$DEPLOY_HOST" 2>&1 \
+            | sed -u "s/^/[${imageName}] /"
+    ) &
+    shipPids+=("$!")
+done
+
+shippingFailed=0
+for shipPid in "${shipPids[@]}"; do
+    wait "$shipPid" || shippingFailed=1
+done
+if [ "$shippingFailed" -ne 0 ]; then
+    echo "Shipping images failed, the release was not started" >&2
+    exit 1
+fi
 
 echo "==> Starting release ${IMAGE_TAG}"
 ssh "$DEPLOY_HOST" "cd '${DEPLOY_PATH}' \
