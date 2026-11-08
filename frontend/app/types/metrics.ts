@@ -112,6 +112,50 @@ export interface LeagueOverview {
   topLosers: ItemMove[]
 }
 
+export interface MarketBreadth {
+  up: number
+  down: number
+  flat: number
+}
+
+/** A bar of the return histogram; `from` is `null` for the lower tail, `to` for the upper one. */
+export interface MarketBin {
+  from: number | null
+  to: number | null
+  count: number
+}
+
+export interface MarketCategory {
+  /** `null` for the items without a category. */
+  category: string | null
+  median: number
+  count: number
+}
+
+export interface MarketItem {
+  slug: string
+  name: string
+  category: string | null
+  price: number
+  logReturn: number
+  units: number | null
+  returnWeight: number | null
+}
+
+/** Distribution of the item returns of one bucket, see `.claude-spec/api-market.md`. */
+export interface MarketDistribution {
+  currency: string | null
+  bucket: string | null
+  /** Starts of the latest buckets, newest first. */
+  buckets: string[]
+  marketReturn: number | null
+  median: number | null
+  breadth: MarketBreadth
+  bins: MarketBin[]
+  byCategory: MarketCategory[]
+  items: MarketItem[]
+}
+
 /** Description of an item on its page, see `.claude-spec/api-item-detail.md`. */
 export interface ItemInfo {
   slug: string

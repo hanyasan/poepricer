@@ -24,6 +24,12 @@ return [
         'unusual_limit' => (int) env('OVERVIEW_UNUSUAL_LIMIT', 20),
         'unusual_residual_multiplier' => (float) env('OVERVIEW_UNUSUAL_RESIDUAL_MULTIPLIER', 2.0),
     ],
+    'market' => [
+        'buckets_limit' => (int) env('MARKET_BUCKETS_LIMIT', 28),
+        'flat_threshold' => (float) env('MARKET_FLAT_THRESHOLD', 0.005),
+        'bin_width' => (float) env('MARKET_BIN_WIDTH', 0.01),
+        'bin_range' => (float) env('MARKET_BIN_RANGE', 0.10),
+    ],
     'items' => [
         'per_page' => (int) env('ITEMS_PER_PAGE', 50),
         'max_per_page' => (int) env('ITEMS_MAX_PER_PAGE', 100),

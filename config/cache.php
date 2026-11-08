@@ -16,6 +16,11 @@ use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueUnusualMoveDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBinDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBreadthDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketCategoryDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketItemDto;
 use App\Enums\MetricPeriodEnum;
 use Illuminate\Support\Str;
 
@@ -161,6 +166,11 @@ return [
         LeagueItemMoveDto::class,
         LeagueUnusualMoveDto::class,
         LeagueItemCategoriesDto::class,
+        MarketDistributionDto::class,
+        MarketBreadthDto::class,
+        MarketBinDto::class,
+        MarketCategoryDto::class,
+        MarketItemDto::class,
         ItemSummaryDto::class,
         ItemInfoDto::class,
         ItemCurrentDto::class,

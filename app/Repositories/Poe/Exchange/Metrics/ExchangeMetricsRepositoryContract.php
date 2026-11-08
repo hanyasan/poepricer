@@ -69,6 +69,23 @@ interface ExchangeMetricsRepositoryContract
 
     public function findLatestMarketMetric(int $metricsItemId): ?ExchangeMarketMetricDto;
 
+    public function findMarketMetric(int $metricsItemId, CarbonImmutable $bucketStart): ?ExchangeMarketMetricDto;
+
+    /**
+     * Starts of the latest buckets that have a market metric, newest first.
+     *
+     * @return string[]
+     */
+    public function getMarketBucketStarts(int $metricsItemId, int $limit): array;
+
+    /**
+     * Metrics of the items of the bucket whose return is calculated. Items with a
+     * zero return weight are left out when only reliable returns are asked for.
+     *
+     * @return ExchangeItemMetricDto[]
+     */
+    public function getBucketReturns(int $metricsItemId, CarbonImmutable $bucketStart, bool $onlyReliableReturns): array;
+
     /**
      * Market metrics of the buckets after the moment, oldest first. All buckets when
      * the moment is null.

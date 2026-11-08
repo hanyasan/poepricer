@@ -6,6 +6,8 @@ const localePath = useLocalePath()
 const slug = computed(() => route.params.league as string)
 const basePath = computed(() => localePath(`/${slug.value}`))
 const { league } = await useLeague(slug)
+// A league outside the main list has no game of its own, so it is taken from the slug.
+const game = computed(() => league.value?.game ?? gameFromSlug(slug.value))
 await useLeagueCurrencies(slug)
 
 // A page can hide the section menu; the league name always links to the overview.
@@ -22,7 +24,10 @@ const links = computed(() => [
 <template>
   <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <NuxtLink :to="basePath" class="text-lg font-semibold hover:text-primary">{{ league?.name ?? slug }}</NuxtLink>
+      <div class="flex flex-wrap items-baseline gap-x-3">
+        <NuxtLink :to="basePath" class="text-lg font-semibold hover:text-primary">{{ league?.name ?? slug }}</NuxtLink>
+        <span v-if="game" class="text-sm text-muted">{{ gameTitle(game) }}</span>
+      </div>
       <LeagueToolbar :show-period="route.meta.usesPeriod !== false" />
     </div>
     <UNavigationMenu v-if="showNav" :items="links" />

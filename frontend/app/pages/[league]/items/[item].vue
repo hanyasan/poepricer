@@ -131,9 +131,9 @@ useSeoMeta({
           </KpiTile>
           <KpiTile :label="$t('item.kpi.residual')">
             <span :class="returnClass(summary.current.residual)">{{ orDash(summary.current.residual, formatReturn) }}</span>
-            <span v-if="summary.current.residualMad !== null" class="text-base font-normal text-muted">
+            <template v-if="summary.current.residualMad !== null" #note>
               {{ $t('item.kpi.residualFluctuation', { value: formatPercent(summary.current.residualMad) }) }}
-            </span>
+            </template>
           </KpiTile>
           <KpiTile :label="$t('item.kpi.tradesPerHour')">
             <span :class="weightClass(summary.current.returnWeight)">{{ formatUnits(summary.current.units) }}</span>
@@ -170,9 +170,6 @@ useSeoMeta({
               </InfoTooltip>
             </h3>
             <ItemResidualChart :points="history.series" />
-            <NuxtLink :to="localePath('/about/metrics#items')" class="inline-block text-sm text-primary hover:underline">
-              {{ $t('metrics.howToRead') }}
-            </NuxtLink>
           </section>
         </template>
 
@@ -188,7 +185,6 @@ useSeoMeta({
             </div>
             <p class="text-sm text-muted">
               {{ $t('item.beta.explanation') }}
-              <NuxtLink :to="localePath('/about/metrics#beta')" class="text-primary hover:underline">{{ $t('metrics.howToRead') }}</NuxtLink>
             </p>
             <ItemBetaChart v-if="history && history.betaHistory.length >= 2" :betas="history.betaHistory" />
             <p v-else-if="history" class="text-sm text-muted">

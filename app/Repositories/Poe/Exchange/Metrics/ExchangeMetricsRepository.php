@@ -196,6 +196,50 @@ final readonly class ExchangeMetricsRepository implements ExchangeMetricsReposit
         return $dto;
     }
 
+    #[\Override]
+    public function findMarketMetric(int $metricsItemId, CarbonImmutable $bucketStart): ?ExchangeMarketMetricDto
+    {
+        $metric = ExchangeMarketMetric::query()
+            ->where('exchange_metrics_item_id', $metricsItemId)
+            ->where('bucket_start', $this->timestamp($bucketStart))
+            ->first();
+
+        if ($metric === null) {
+            return null;
+        }
+
+        /** @var ExchangeMarketMetricDto $dto */
+        $dto = $this->mapper->mapEloquentModel(ExchangeMarketMetricDto::class, $metric);
+
+        return $dto;
+    }
+
+    /**
+     * @return string[]
+     */
+    #[\Override]
+    public function getMarketBucketStarts(int $metricsItemId, int $limit): array
+    {
+        return ExchangeMarketMetric::query()
+            ->where('exchange_metrics_item_id', $metricsItemId)
+            ->orderByDesc('bucket_start')
+            ->limit($limit)
+            ->pluck('bucket_start')
+            ->map(static fn (mixed $bucketStart): string => (string) $bucketStart)
+            ->all();
+    }
+
+    /**
+     * @return ExchangeItemMetricDto[]
+     */
+    #[\Override]
+    public function getBucketReturns(int $metricsItemId, CarbonImmutable $bucketStart, bool $onlyReliableReturns): array
+    {
+        $query = $this->bucketItemMetrics($metricsItemId, $bucketStart)->whereNotNull('log_return');
+
+        return $this->mapItemMetrics($onlyReliableReturns ? $this->onlyReliableReturns($query) : $query);
+    }
+
     /**
      * @return ExchangeMarketMetricDto[]
      */

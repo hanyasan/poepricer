@@ -231,6 +231,73 @@ class ExchangeMetricsRepositoryTest extends FeatureTestCase
         $this->assertSame(12, $stored[0]->observations);
     }
 
+    public function test_market_bucket_starts_are_the_latest_ones_newest_first(): void
+    {
+        [$metricsItem, $otherMetricsItem] = $this->twoMetricsItemsAndTwoItems('Bucket Starts League');
+
+        foreach (['2030-01-01 00:00:00', '2030-01-01 12:00:00', '2030-01-02 00:00:00'] as $bucketStart) {
+            ExchangeMarketMetric::factory()->forMetricsItem($metricsItem)->atBucket($bucketStart)->create();
+        }
+
+        ExchangeMarketMetric::factory()->forMetricsItem($otherMetricsItem)->atBucket('2030-01-03 00:00:00')->create();
+
+        $starts = $this->repository()->getMarketBucketStarts($metricsItem->id, 2);
+
+        $this->assertSame(
+            ['2030-01-02T00:00:00+00:00', '2030-01-01T12:00:00+00:00'],
+            array_map(static fn (string $start): string => CarbonImmutable::parse($start)->utc()->toIso8601String(), $starts),
+        );
+    }
+
+    public function test_a_market_metric_is_found_by_its_bucket_start(): void
+    {
+        [$metricsItem, $otherMetricsItem] = $this->twoMetricsItemsAndTwoItems('Find Market Metric League');
+        ExchangeMarketMetric::factory()->forMetricsItem($metricsItem)->atBucket('2030-01-01 00:00:00')->withReturn(0.07)->create();
+        ExchangeMarketMetric::factory()->forMetricsItem($otherMetricsItem)->atBucket('2030-01-01 12:00:00')->create();
+
+        $found = $this->repository()->findMarketMetric($metricsItem->id, $this->at('2030-01-01 00:00:00'));
+
+        $this->assertSame(0.07, $found?->market_return);
+        $this->assertNull($this->repository()->findMarketMetric($metricsItem->id, $this->at('2030-01-01 12:00:00')));
+    }
+
+    public function test_bucket_returns_hold_only_the_bucket_and_the_items_with_a_return(): void
+    {
+        [$metricsItem, $otherMetricsItem, $itemA, $itemB] = $this->twoMetricsItemsAndTwoItems('Bucket Returns League');
+
+        ExchangeItemMetric::factory()->forItem($itemA, $metricsItem)->atBucket('2030-01-01 00:00:00')->withReturn(0.1)->create();
+        ExchangeItemMetric::factory()->forItem($itemB, $metricsItem)->atBucket('2030-01-01 00:00:00')->create();
+        ExchangeItemMetric::factory()->forItem($itemB, $metricsItem)->atBucket('2030-01-01 12:00:00')->withReturn(0.3)->create();
+        ExchangeItemMetric::factory()->forItem($itemA, $otherMetricsItem)->atBucket('2030-01-01 00:00:00')->withReturn(0.5)->create();
+
+        $metrics = $this->repository()->getBucketReturns($metricsItem->id, $this->at('2030-01-01 00:00:00'), false);
+
+        $this->assertSame([$itemA->id], array_map(static fn ($metric): int => $metric->exchange_item_id, $metrics));
+        $this->assertSame('item-a', $metrics[0]->exchange_item->trade_id);
+    }
+
+    public function test_bucket_returns_leave_out_zero_weights_only_when_reliable_returns_are_asked_for(): void
+    {
+        $league = $this->league('Reliable Returns League');
+        $metricsItem = $this->metricsItem($league, $this->item($league, 'divine'));
+        [$itemA, $itemB, $itemC] = [$this->item($league, 'item-a'), $this->item($league, 'item-b'), $this->item($league, 'item-c')];
+
+        foreach ([[$itemA, 0.0], [$itemB, 0.4], [$itemC, null]] as [$item, $weight]) {
+            ExchangeItemMetric::factory()
+                ->forItem($item, $metricsItem)
+                ->atBucket('2030-01-01 00:00:00')
+                ->withReturn(0.1)
+                ->state(['return_weight' => $weight])
+                ->create();
+        }
+
+        $reliable = $this->repository()->getBucketReturns($metricsItem->id, $this->at('2030-01-01 00:00:00'), true);
+        $all = $this->repository()->getBucketReturns($metricsItem->id, $this->at('2030-01-01 00:00:00'), false);
+
+        $this->assertEqualsCanonicalizing(['item-b', 'item-c'], array_map(static fn ($metric): string => $metric->exchange_item->trade_id, $reliable));
+        $this->assertCount(3, $all);
+    }
+
     private function repository(): ExchangeMetricsRepositoryContract
     {
         return $this->app->make(ExchangeMetricsRepositoryContract::class);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Game, League } from '~/types/metrics'
+import type { League } from '~/types/metrics'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
@@ -14,11 +14,8 @@ useSeoMeta({
   ogDescription: () => t('seo.home.description'),
 })
 
-const gameTitles: Record<Game, string> = { poe1: 'Path of Exile', poe2: 'Path of Exile 2' }
-
 const groups = computed(() =>
-  (Object.keys(gameTitles) as Game[])
-    .map((game) => ({ game, title: gameTitles[game], leagues: leagues.value.filter((league) => league.game === game) }))
+  GAMES.map((game) => ({ game, title: gameTitle(game), leagues: leagues.value.filter((league) => league.game === game) }))
     .filter((group) => group.leagues.length > 0),
 )
 

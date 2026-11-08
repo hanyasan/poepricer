@@ -70,7 +70,7 @@ const columns = computed<TableColumn<UnusualMove>[]>(() => [
         </KpiTile>
         <KpiTile :label="$t('overview.kpi.basketSize')">
           {{ overview.kpi.basketSize }}
-          <span class="text-base font-normal text-muted">{{ $t('home.outOf', { total: overview.kpi.basketTotal }) }}</span>
+          <template #note>{{ $t('home.outOf', { total: overview.kpi.basketTotal }) }}</template>
         </KpiTile>
         <KpiTile :label="$t('overview.kpi.updated')"><LocalDateTime :value="overview.kpi.lastSnapshotAt" :empty="$t('common.noSnapshots')" /></KpiTile>
       </div>
@@ -81,9 +81,6 @@ const columns = computed<TableColumn<UnusualMove>[]>(() => [
         <section class="space-y-3">
           <h2 class="text-lg font-medium">{{ $t('overview.marketReturn') }}</h2>
           <LineChart :points="overview.marketReturnSeries" />
-          <NuxtLink :to="localePath('/about/metrics#market')" class="inline-block text-sm text-primary hover:underline">
-            {{ $t('metrics.howToRead') }}
-          </NuxtLink>
         </section>
 
         <section class="space-y-3">
@@ -95,9 +92,6 @@ const columns = computed<TableColumn<UnusualMove>[]>(() => [
               <p>{{ $t('overview.unusualHelp.lineThree') }}</p>
             </InfoTooltip>
           </h2>
-          <NuxtLink :to="localePath('/about/metrics#items')" class="inline-block text-sm text-primary hover:underline">
-            {{ $t('metrics.howToReadTable') }}
-          </NuxtLink>
           <p v-if="overview.unusualMoves.length === 0" class="text-muted">{{ $t('overview.noUnusualMoves') }}</p>
           <UTable v-else :data="overview.unusualMoves" :columns="columns" :ui="{ th: 'align-bottom' }">
             <template #name-cell="{ row }">

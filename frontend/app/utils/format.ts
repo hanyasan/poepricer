@@ -77,3 +77,15 @@ export function orDash<T>(value: T | null, format: (value: T) => string): string
 export function formatBucketLabel(moment: string): string {
   return dateTimeFormatter().format(new Date(moment))
 }
+
+/** The edge of a histogram bar as a signed percent without a trailing zero: 0.05 becomes "+5%". */
+export function formatBinEdge(value: number): string {
+  const percent = Number((value * 100).toFixed(2))
+
+  return `${percent > 0 ? '+' : ''}${percent}%`
+}
+
+/** Whether a return falls into a bar of the histogram: the lower edge is in, the upper one is out. */
+export function binContains(bin: { from: number | null; to: number | null }, value: number): boolean {
+  return (bin.from === null || value >= bin.from) && (bin.to === null || value < bin.to)
+}

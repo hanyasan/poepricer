@@ -72,7 +72,45 @@
     "topLosers": "Top losers of the last bucket"
   },
   "market": {
-    "title": "Market return"
+    "loadError": "Could not load the distribution of moves",
+    "bucketLabel": "Bucket",
+    "bucketHint": "Bucket to view",
+    "latestBucket": "latest",
+    "bucketNotFound": "The league has no such bucket",
+    "showLatest": "Show the latest",
+    "includeAll": "Include thinly traded items",
+    "includeAllHint": "Their returns are less reliable and are not part of the market return",
+    "noItems": "This bucket has no items with a calculated return",
+    "breadth": {
+      "up": "Grew",
+      "down": "Fell",
+      "flat": "Unchanged",
+      "share": "{percent}%"
+    },
+    "marketReturn": "Market return",
+    "marketReturnHint": "The market return is the weighted median of the returns of the basket items, that is the middle of the distribution below",
+    "histogram": {
+      "title": "Distribution of returns",
+      "hint": "Click a bar to see the items of its range",
+      "ariaLabel": "Histogram: how many items fell into each return range over the bucket",
+      "lowerTail": "below {to}",
+      "upperTail": "{from} and above",
+      "between": "from {from} to {to}",
+      "itemsCount": "Items: {count}",
+      "marketReturn": "Market: {value}"
+    },
+    "selected": {
+      "title": "Items with a return of {range}",
+      "clear": "Clear selection",
+      "empty": "No items in this range"
+    },
+    "categories": {
+      "title": "Return by category",
+      "hint": "Median return of the items of each category",
+      "ariaLabel": "Chart of the median return by item category",
+      "median": "Median: {value}",
+      "count": "Items: {count}"
+    }
   },
   "items": {
     "loadError": "Could not load the items",
@@ -173,7 +211,7 @@
     },
     "market": {
       "title": "{league} market",
-      "description": "Market return of the {league} league over time."
+      "description": "Distribution of item price moves in the {league} league: how many items grew and fell, a histogram of returns and a breakdown by category."
     },
     "metrics": {
       "title": "About metrics",
@@ -184,9 +222,7 @@
     "title": "About metrics",
     "subtitle": "How the metrics on the site work and how to read them",
     "contents": "Contents",
-    "backHome": "Back to the leagues",
-    "howToRead": "How to read this chart",
-    "howToReadTable": "How these figures are calculated"
+    "backHome": "Back to the leagues"
   },
   "errorPage": {
     "notFoundTitle": "Page not found",
