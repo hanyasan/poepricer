@@ -49,6 +49,7 @@ const option = computed(() => ({
       silent: true,
       symbol: 'none',
       lineStyle: { opacity: 0 },
+      areaStyle: { color: colors.primary, opacity: 0.15 },
       data: props.points.map((point) => (point.residualMad === null ? null : -BAND_MULTIPLIER * point.residualMad)),
     },
     {
@@ -59,7 +60,7 @@ const option = computed(() => ({
       symbol: 'none',
       lineStyle: { opacity: 0 },
       areaStyle: { color: colors.primary, opacity: 0.15 },
-      data: props.points.map((point) => (point.residualMad === null ? null : 2 * BAND_MULTIPLIER * point.residualMad)),
+      data: props.points.map((point) => (point.residualMad === null ? null : BAND_MULTIPLIER * point.residualMad)),
     },
     {
       name: t('chart.residual'),
