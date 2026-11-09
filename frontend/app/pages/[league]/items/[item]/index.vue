@@ -81,8 +81,17 @@ useSeoMeta({
         <template #date><LocalDateTime :value="summary.lastBucket" /></template>
       </i18n-t>
 
-      <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiTile :label="$t('item.kpi.price', { currency: currencyName })">{{ formatPrice(summary.current.price) }}</KpiTile>
+      <p v-if="summary.current === null && summary.currentPrice !== null" class="text-sm text-muted">
+        {{ $t('item.currentPrice', { price: formatPrice(summary.currentPrice), currency: currencyName }) }}
+      </p>
+
+      <div v-else-if="summary.current !== null" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiTile :label="$t('item.kpi.price', { currency: currencyName })">
+          {{ formatPrice(summary.currentPrice ?? summary.current.price) }}
+          <template v-if="summary.currentPriceAt" #note>
+            {{ $t('common.updated') }} <LocalDateTime :value="summary.currentPriceAt" />
+          </template>
+        </KpiTile>
         <KpiTile :label="$t('item.kpi.priceChange')">
           <span :class="returnClass(summary.current.logReturn)">{{ orDash(summary.current.logReturn, formatReturn) }}</span>
         </KpiTile>

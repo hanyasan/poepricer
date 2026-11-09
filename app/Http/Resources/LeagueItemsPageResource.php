@@ -41,6 +41,7 @@ final class LeagueItemsPageResource extends BaseResource
                 'total' => $page->total,
                 'currency' => $page->currency,
                 'lastBucket' => self::toDefaultResponseDatetime($page->lastBucket),
+                'lastSnapshotAt' => self::toDefaultResponseDatetime($page->lastSnapshotAt),
             ],
         ];
     }

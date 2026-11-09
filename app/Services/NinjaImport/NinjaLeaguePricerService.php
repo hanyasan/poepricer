@@ -28,22 +28,28 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
 
                 $leaguePriced += 1;
             } catch (\Throwable $exception) {
-                Log::error('Import exchange prices for league ' . $pickedLeague->league_name . ' failed');
+                Log::error('Import exchange prices for league '.$pickedLeague->league_name.' failed');
             }
         }
 
-        Log::info('Imported ' . $leaguePriced . ' of ' . count($pickedLeagues) . ' leagues for ' . $version->version);
+        Log::info('Imported '.$leaguePriced.' of '.count($pickedLeagues).' leagues for '.$version->version);
     }
 
     /**
+     * A league is due when the schedule slot of its latest check plus the rule interval has been reached.
+     * Rounding the check time down to the scheduler step makes the result independent of
+     * how long the queue and the import took within the slot.
+     *
      * @return Collection<int, ExtendedPoeLeagueDto>
      */
     #[\Override]
     public function pickLeaguesForCheck(PoeVersionDto $version): Collection
     {
+        $stepMinutes = config('poe.price_check.schedule_step_minutes.'.$version->version, 10);
+
         /** @var Collection<int, ExtendedPoeLeagueDto> $collection */
         $collection = collect($this->leagueRepository->getWithLastPriceCheckAndRule($version->id))
-            ->filter(function (ExtendedPoeLeagueDto $poeLeagueDto) {
+            ->filter(function (ExtendedPoeLeagueDto $poeLeagueDto) use ($stepMinutes) {
                 $minutesCheck = $poeLeagueDto->check_rule?->minutes_check;
                 $latestCheck = ($poeLeagueDto->latest_price_check[0] ?? null)?->created_at;
 
@@ -51,9 +57,13 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
                     return false;
                 }
 
-                return is_null($latestCheck) || CarbonImmutable::now()->greaterThanOrEqualTo(
-                    CarbonImmutable::parse($latestCheck)->addMinutes($minutesCheck)
-                );
+                if ($latestCheck === null) {
+                    return true;
+                }
+
+                $latestSlot = CarbonImmutable::parse($latestCheck)->utc()->floorMinutes($stepMinutes);
+
+                return CarbonImmutable::now()->greaterThanOrEqualTo($latestSlot->addMinutes($minutesCheck));
             });
 
         return $collection;

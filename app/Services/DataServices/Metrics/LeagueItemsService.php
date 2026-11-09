@@ -15,6 +15,7 @@ use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
+use App\Repositories\Poe\Exchange\PriceCheck\PriceCheckRepositoryContract;
 use App\Utility\Metrics\ItemMetricFlags;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +27,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
         private ExchangeMetricsRepositoryContract $metricsRepository,
         private ExchangeItemRepositoryContract $itemRepository,
         private ExchangeItemTableRepositoryContract $itemTableRepository,
+        private PriceCheckRepositoryContract $priceCheckRepository,
         private ItemMetricFlags $flags,
     ) {}
 
@@ -71,6 +73,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
         $page = $this->itemTableRepository->paginate(
             $league->id,
             $metricsItem->id,
+            $currency,
             $bucket,
             $filter,
             $sort,
@@ -94,6 +97,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
             perPage: $pagination->perPage,
             currency: $currency,
             lastBucket: $latest->bucket_start,
+            lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($league->id),
         );
     }
 
@@ -108,7 +112,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
             slug: $row->trade_id,
             name: $row->name,
             category: $row->poe_category === '' ? null : $row->poe_category,
-            price: $row->price,
+            price: $row->current_price ?? $row->price,
             logReturn: $row->log_return,
             residual: $row->residual,
             residualMad: $row->residual_mad,

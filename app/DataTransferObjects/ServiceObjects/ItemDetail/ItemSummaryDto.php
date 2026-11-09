@@ -12,5 +12,7 @@ final readonly class ItemSummaryDto
         public ?string $lastBucket,
         public ?ItemCurrentDto $current,
         public ?ExchangeItemBetaDto $beta,
+        public ?float $currentPrice = null,
+        public ?string $currentPriceAt = null,
     ) {}
 }

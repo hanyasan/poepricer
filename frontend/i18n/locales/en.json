@@ -141,6 +141,7 @@
     "notFoundDescription": "There is no such item in this league",
     "loadError": "Could not load the item",
     "unusualMove": "unusual move",
+    "currentPrice": "Current price: {price} {currency}. The bucket metrics are below.",
     "noCurrent": "The item has no values in the last bucket ({date}). The data for the selected period is shown below.",
     "kpi": {
       "price": "Price in {currency}",

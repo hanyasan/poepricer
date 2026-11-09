@@ -112,6 +112,39 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
         $this->assertSame([$item->id => [['price' => 300.0, 'units' => 20.0]]], $this->prices($league->id, 'exalted'));
     }
 
+    public function test_latest_prices_come_from_the_newest_check_in_the_requested_currency(): void
+    {
+        $league = $this->league('Bucket Latest League');
+        $type = $this->exchangeType();
+        $itemA = $this->item($league, 'item-a');
+        $itemB = $this->item($league, 'item-b');
+
+        $this->snapshot($league, $type, '2030-01-01 01:00:00', ['item-a' => 1.0, 'item-b' => 2.0]);
+        $this->snapshot($league, $type, '2030-01-01 03:00:00', ['item-a' => 5.0], ['divine' => 1.0, 'exalted' => 600.0]);
+
+        $latest = $this->latest($league->id, 'exalted');
+
+        $this->assertSame('2030-01-01 03:00:00+00', $latest['snapshot_at']);
+        $this->assertSame([$itemA->id => 3000.0], $latest['prices']);
+        $this->assertArrayNotHasKey($itemB->id, $latest['prices']);
+    }
+
+    public function test_latest_prices_of_a_league_without_checks_are_empty(): void
+    {
+        $league = $this->league('Bucket Latest Empty League');
+
+        $this->assertSame(['snapshot_at' => null, 'prices' => []], $this->latest($league->id, 'divine'));
+    }
+
+    /**
+     * @return array{snapshot_at: string|null, prices: array<int, float>}
+     */
+    private function latest(int $leagueId, string $currencyTradeId): array
+    {
+        return $this->app->make(ExchangeBucketPriceRepositoryContract::class)
+            ->getLatestPrices($leagueId, $currencyTradeId);
+    }
+
     /**
      * @return array<int, list<array{price: float, units: float|null}>>
      */

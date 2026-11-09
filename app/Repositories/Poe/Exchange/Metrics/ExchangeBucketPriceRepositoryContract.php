@@ -19,4 +19,13 @@ interface ExchangeBucketPriceRepositoryContract
         CarbonImmutable $from,
         CarbonImmutable $to,
     ): array;
+
+    /**
+     * Prices of the items of the latest price check of the league expressed in the
+     * currency with the given trade id, with the moment the check was created. This is
+     * the freshest data, kept apart from the buckets that only ever hold closed spans.
+     *
+     * @return array{snapshot_at: string|null, prices: array<int, float>}
+     */
+    public function getLatestPrices(int $leagueId, string $currencyTradeId): array;
 }

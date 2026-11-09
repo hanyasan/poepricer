@@ -17,5 +17,6 @@ final readonly class ItemTableRowDto
         public ?float $units,
         public ?float $return_weight,
         public ?float $beta,
+        public ?float $current_price = null,
     ) {}
 }

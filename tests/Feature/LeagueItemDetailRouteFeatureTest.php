@@ -115,6 +115,8 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                 'item' => ['slug' => 'exalted', 'name' => 'Exalted Orb', 'category' => 'Currency'],
                 'currency' => 'divine',
                 'lastBucket' => '2030-01-10T12:00:00+00:00',
+                'currentPrice' => null,
+                'currentPriceAt' => null,
                 'current' => [
                     'price' => 2.5,
                     'logReturn' => 0.0121,
@@ -134,6 +136,20 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                     'observations' => 12,
                 ],
             ]);
+    }
+
+    public function test_summary_carries_the_price_from_the_latest_snapshot(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Detail Fresh Price League');
+        $item = $this->categorizedItem($league, 'exalted', 'Currency');
+        $this->metric($metricsItem, $item, self::LAST_BUCKET, ['price' => 2.5]);
+        $this->snapshot($league, $this->exchangeType(), '2030-01-10 14:00:00', ['exalted' => 7.5]);
+
+        $this->getJson("/api/leagues/{$league->slug}/items/exalted/summary")
+            ->assertOk()
+            ->assertJsonPath('currentPrice', 7.5)
+            ->assertJsonPath('currentPriceAt', '2030-01-10T14:00:00+00:00')
+            ->assertJsonPath('current.price', 2.5);
     }
 
     public function test_summary_of_an_item_without_metrics_has_null_current_and_beta(): void
@@ -180,6 +196,8 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                 'item' => ['slug' => 'exalted', 'name' => 'EXALTED', 'category' => null],
                 'currency' => null,
                 'lastBucket' => null,
+                'currentPrice' => null,
+                'currentPriceAt' => null,
                 'current' => null,
                 'beta' => null,
             ]);

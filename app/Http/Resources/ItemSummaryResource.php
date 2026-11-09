@@ -21,6 +21,8 @@ final class ItemSummaryResource extends BaseResource
             ],
             'currency' => $summary->currency,
             'lastBucket' => self::toDefaultResponseDatetime($summary->lastBucket),
+            'currentPrice' => $summary->currentPrice,
+            'currentPriceAt' => self::toDefaultResponseDatetime($summary->currentPriceAt),
             'current' => $current === null ? null : [
                 'price' => $current->price,
                 'logReturn' => $current->logReturn,
