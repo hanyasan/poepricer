@@ -14,7 +14,8 @@ final readonly class NinjaLeaguePricerService implements NinjaLeaguePricerServic
     public function __construct(
         private NinjaImportServiceContract $importService,
         private PoeLeagueRepositoryContract $leagueRepository,
-    ) {}
+    ) {
+    }
 
     #[\Override]
     public function importPickedForVersion(PoeVersionDto $version): void
