@@ -17,7 +17,10 @@ useSeoMeta({
 </script>
 
 <template>
-  <UApp>
+  <!-- An open select or menu locks the scroll of the page and pads the body by the width of the
+       scrollbar. The scrollbar is always there (`overflow-y: scroll` in main.css), so no padding is needed. -->
+  <UApp :scroll-body="{ padding: 0, margin: 0 }">
+    <NuxtLoadingIndicator color="var(--ui-primary)" :height="3" />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

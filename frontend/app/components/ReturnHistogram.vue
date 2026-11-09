@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import { use } from 'echarts/core'
-import { BarChart } from 'echarts/charts'
-import { GridComponent, MarkLineComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
 import type { MarketBin } from '~/types/metrics'
-
-use([BarChart, GridComponent, MarkLineComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{
   bins: MarketBin[]
@@ -109,12 +102,5 @@ function onClick(params: { dataIndex: number }): void {
 </script>
 
 <template>
-  <div class="h-72 w-full" role="img" :aria-label="$t('market.histogram.ariaLabel')">
-    <ClientOnly>
-      <VChart :option="option" autoresize @click="onClick" />
-      <template #fallback>
-        <USkeleton class="h-full w-full" />
-      </template>
-    </ClientOnly>
-  </div>
+  <ChartFrame :option="option" @click="onClick" class="h-72 w-full" role="img" :aria-label="$t('market.histogram.ariaLabel')" />
 </template>

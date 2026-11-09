@@ -9,13 +9,12 @@ const { leagueName } = useLeagueName()
 const leagueSlug = computed(() => route.params.league as string)
 const itemSlug = computed(() => route.params.item as string)
 
-// The layout asks for the summary too, so the answer is shared; here it gives the name of the item.
-const summaryRequest = useItemSummary(leagueSlug, itemSlug)
+// The summary comes from the item layout; here it gives the name of the item.
+const summary = useProvidedItemSummary()
 const pricesRequest = useItemPrices(leagueSlug, itemSlug)
 
-await Promise.all([summaryRequest, pricesRequest])
+await pricesRequest
 
-const { data: summary } = summaryRequest
 const { data: prices, status, error, refresh } = pricesRequest
 
 const currencyName = computed(
@@ -64,7 +63,13 @@ useSeoMeta({
       :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
     />
 
-    <USkeleton v-else-if="!prices" class="h-96" />
+    <div v-else-if="!prices" class="space-y-6">
+      <KpiSkeletonGrid :count="9" />
+      <div class="space-y-3">
+        <USkeleton class="h-7 w-72" />
+        <USkeleton class="h-96" />
+      </div>
+    </div>
 
     <p v-else-if="!prices.stats" class="text-muted">{{ $t('itemPrices.empty') }}</p>
 

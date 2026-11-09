@@ -1,6 +1,7 @@
 {
   "common": {
     "retry": "Retry",
+    "updated": "Updated",
     "noData": "No data",
     "lowData": "low data",
     "noPage": "There is no such page",

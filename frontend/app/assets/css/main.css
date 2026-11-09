@@ -20,6 +20,11 @@ html.dark {
 @layer base {
   html {
     font-size: 106.25%;
+    /* The scrollbar always stays, so a page shorter than the window (or a moment of the
+       transition between pages) does not shift the content sideways. Since `html` has its own
+       overflow, the `overflow: hidden` that an open select puts on `body` no longer reaches the
+       window and does not make the scrollbar disappear. */
+    overflow-y: scroll;
   }
 
   body {

@@ -9,12 +9,14 @@ const localePath = useLocalePath()
 const leagueSlug = computed(() => route.params.league as string)
 const itemSlug = computed(() => route.params.item as string)
 
-// The tabs ask for the summary again; the request is the same, so they share this answer.
+// The tabs take this answer from the layout instead of asking again.
 const summaryRequest = useItemSummary(leagueSlug, itemSlug)
 
 await summaryRequest
 
 const { data: summary, error: summaryError, refresh: refreshSummary } = summaryRequest
+
+provideItemSummary(summary)
 
 const notFound = computed(() => summaryError.value?.statusCode === 404)
 
@@ -63,7 +65,12 @@ useSeoMeta({
       :actions="[{ label: $t('common.retry'), onClick: () => refreshSummary() }]"
     />
 
-    <USkeleton v-else-if="!summary" class="h-96" />
+    <div v-else-if="!summary" class="space-y-6">
+      <USkeleton class="h-[34px] w-64" />
+      <USkeleton class="h-[51px]" />
+      <KpiSkeletonGrid :count="6" />
+      <USkeleton class="h-[349px]" />
+    </div>
 
     <template v-else>
       <div class="flex flex-wrap items-center gap-3">

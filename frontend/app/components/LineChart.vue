@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import { use } from 'echarts/core'
-import { LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
 import type { SeriesPoint } from '~/types/metrics'
-
-use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ points: SeriesPoint[] }>()
 
@@ -46,9 +39,5 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <div class="h-72 w-full">
-    <ClientOnly>
-      <VChart :option="option" autoresize />
-    </ClientOnly>
-  </div>
+  <ChartFrame :option="option" class="h-72 w-full" />
 </template>

@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import { use } from 'echarts/core'
-import { BarChart, LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
 import type { ItemPricePoint, PriceWindow } from '~/types/metrics'
-
-use([LineChart, BarChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{
   points: ItemPricePoint[]
@@ -149,9 +142,5 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <div class="h-96 w-full" role="img" :aria-label="$t('itemPrices.chartLabel')">
-    <ClientOnly>
-      <VChart :option="option" autoresize />
-    </ClientOnly>
-  </div>
+  <ChartFrame :option="option" class="h-96 w-full" role="img" :aria-label="$t('itemPrices.chartLabel')" />
 </template>
