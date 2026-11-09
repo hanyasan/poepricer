@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import { use } from 'echarts/core'
-import { BarChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
 import type { MarketCategory } from '~/types/metrics'
-
-use([BarChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 /** Height of the row of a category and the space for the axis. */
 const ROW_HEIGHT = 32
@@ -65,12 +58,5 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <div class="w-full" :style="{ height }" role="img" :aria-label="$t('market.categories.ariaLabel')">
-    <ClientOnly>
-      <VChart :option="option" autoresize />
-      <template #fallback>
-        <USkeleton class="h-full w-full" />
-      </template>
-    </ClientOnly>
-  </div>
+  <ChartFrame :option="option" class="w-full" :style="{ height }" role="img" :aria-label="$t('market.categories.ariaLabel')" />
 </template>

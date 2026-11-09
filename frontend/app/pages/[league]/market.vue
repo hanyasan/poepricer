@@ -115,8 +115,16 @@ const columns = computed<TableColumn<MarketItem>[]>(() => [
       :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
     />
 
-    <div v-else-if="!distribution" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <USkeleton v-for="index in 4" :key="index" class="h-24" />
+    <div v-else-if="!distribution" class="space-y-6">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <USkeleton class="h-8 w-72" />
+        <USkeleton class="h-[21px] w-[297px] lg:ml-auto" />
+      </div>
+      <KpiSkeletonGrid />
+      <div class="space-y-3">
+        <USkeleton class="h-7 w-64" />
+        <USkeleton class="h-72" />
+      </div>
     </div>
 
     <p v-else-if="distribution.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
@@ -140,13 +148,16 @@ const columns = computed<TableColumn<MarketItem>[]>(() => [
           </ClientOnly>
           <p class="max-w-sm text-sm text-muted">{{ $t('market.bucketHint') }}</p>
         </div>
-        <UCheckbox
-          class="lg:ml-auto"
-          :model-value="includeAll"
-          :label="$t('market.includeAll')"
-          :description="$t('market.includeAllHint')"
-          @update:model-value="setIncludeAll($event === true)"
-        />
+        <div class="flex items-center gap-1.5 lg:ml-auto">
+          <UCheckbox
+            :model-value="includeAll"
+            :label="$t('market.includeAll')"
+            @update:model-value="setIncludeAll($event === true)"
+          />
+          <InfoTooltip :label="$t('market.includeAll')">
+            <p>{{ $t('market.includeAllHint') }}</p>
+          </InfoTooltip>
+        </div>
       </div>
 
       <p v-if="distribution.items.length === 0" class="text-muted">{{ $t('market.noItems') }}</p>

@@ -40,7 +40,7 @@ function weekReturn(league: League): number | null {
     </p>
 
     <div v-if="status === 'pending'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <USkeleton v-for="index in 3" :key="index" class="h-44" />
+      <USkeleton v-for="index in 3" :key="index" class="h-[238px]" />
     </div>
 
     <UAlert

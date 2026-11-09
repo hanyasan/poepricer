@@ -10,15 +10,14 @@ const leagueSlug = computed(() => route.params.league as string)
 const itemSlug = computed(() => route.params.item as string)
 const { currencyName, period } = storeToRefs(useFiltersStore())
 
-// The layout asks for the summary too; the request is the same, so the answer is shared.
-// The three requests start together, so the server renders the page after the slowest one.
-const summaryRequest = useItemSummary(leagueSlug, itemSlug)
+// The summary comes from the item layout. The two requests start together, so the server
+// renders the page after the slowest one.
+const summary = useProvidedItemSummary()
 const historyRequest = useItemHistory(leagueSlug, itemSlug)
 const bucketsRequest = useItemBuckets(leagueSlug, itemSlug)
 
-await Promise.all([summaryRequest, historyRequest, bucketsRequest])
+await Promise.all([historyRequest, bucketsRequest])
 
-const { data: summary } = summaryRequest
 const { data: history, error: historyError, refresh: refreshHistory } = historyRequest
 const { data: buckets, status: bucketsStatus, error: bucketsError, refresh: refreshBuckets, page, setPage } = bucketsRequest
 

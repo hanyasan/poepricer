@@ -130,121 +130,131 @@ const emptyText = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <h1 class="text-2xl font-semibold">{{ $t('seo.items.title', { league: leagueName }) }}</h1>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="subtle"
-      icon="i-lucide-triangle-alert"
-      :title="$t('items.loadError')"
-      :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
-    />
+    <div class="space-y-4">
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-triangle-alert"
+        :title="$t('items.loadError')"
+        :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
+      />
 
-    <USkeleton v-else-if="!items" class="h-96" />
-
-    <p v-else-if="items.meta.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
-
-    <p v-else-if="items.meta.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
-
-    <template v-else>
-      <div class="flex flex-wrap items-center gap-3">
-        <UInput v-model="searchText" icon="i-lucide-search" :placeholder="$t('items.searchPlaceholder')" class="w-64" maxlength="100" />
-        <USelect
-          :model-value="selectedCategory"
-          :items="categoryItems"
-          class="w-56"
-          :aria-label="$t('items.category')"
-          @update:model-value="onCategoryChange"
-        />
-        <UButton
-          icon="i-lucide-activity"
-          color="warning"
-          :variant="unusualFirst ? 'solid' : 'outline'"
-          :aria-pressed="unusualFirst"
-          @click="toggleUnusualFirst"
-        >
-          {{ $t('items.unusualFirst') }}
-        </UButton>
+      <div v-else-if="!items" class="space-y-4">
+        <div class="flex flex-wrap gap-3">
+          <USkeleton class="h-8 w-64" />
+          <USkeleton class="h-8 w-56" />
+          <USkeleton class="h-8 w-40" />
+        </div>
+        <USkeleton class="h-5 w-72" />
+        <USkeleton v-for="index in 10" :key="index" class="h-12" />
       </div>
 
-      <p class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
-        {{ $t('items.found', { total: items.meta.total }) }}
-        <template v-if="items.meta.lastSnapshotAt">
-          <span>·</span>
-          <span>{{ $t('common.updated') }} <LocalDateTime :value="items.meta.lastSnapshotAt" /></span>
-        </template>
-        <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
-          <NuxtLink :to="localePath('/about/metrics')" :aria-label="$t('items.help.label')" class="inline-flex hover:text-primary">
-            <UIcon name="i-lucide-circle-help" class="size-4" />
-          </NuxtLink>
-          <template #content>
-            <div class="max-w-xs space-y-1 text-sm leading-relaxed">
-              <p>{{ $t('items.help.lineOne') }}</p>
-              <p>{{ $t('items.help.lineTwo') }}</p>
-              <p>{{ $t('items.help.lineThree') }}</p>
-              <p class="text-muted">{{ $t('common.openMetricsHint') }}</p>
+      <p v-else-if="items.meta.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
+
+      <p v-else-if="items.meta.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
+
+      <template v-else>
+        <div class="flex flex-wrap items-center gap-3">
+          <UInput v-model="searchText" icon="i-lucide-search" :placeholder="$t('items.searchPlaceholder')" class="w-64" maxlength="100" />
+          <USelect
+            :model-value="selectedCategory"
+            :items="categoryItems"
+            class="w-56"
+            :aria-label="$t('items.category')"
+            @update:model-value="onCategoryChange"
+          />
+          <UButton
+            icon="i-lucide-activity"
+            color="warning"
+            :variant="unusualFirst ? 'solid' : 'outline'"
+            :aria-pressed="unusualFirst"
+            @click="toggleUnusualFirst"
+          >
+            {{ $t('items.unusualFirst') }}
+          </UButton>
+        </div>
+
+        <p class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
+          {{ $t('items.found', { total: items.meta.total }) }}
+          <template v-if="items.meta.lastSnapshotAt">
+            <span>·</span>
+            <span>{{ $t('common.updated') }} <LocalDateTime :value="items.meta.lastSnapshotAt" /></span>
+          </template>
+          <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
+            <NuxtLink :to="localePath('/about/metrics')" :aria-label="$t('items.help.label')" class="inline-flex hover:text-primary">
+              <UIcon name="i-lucide-circle-help" class="size-4" />
+            </NuxtLink>
+            <template #content>
+              <div class="max-w-xs space-y-1 text-sm leading-relaxed">
+                <p>{{ $t('items.help.lineOne') }}</p>
+                <p>{{ $t('items.help.lineTwo') }}</p>
+                <p>{{ $t('items.help.lineThree') }}</p>
+                <p class="text-muted">{{ $t('common.openMetricsHint') }}</p>
+              </div>
+            </template>
+          </UTooltip>
+        </p>
+
+        <UTable
+          :data="items.data"
+          :columns="columns"
+          :ui="{ th: 'align-bottom' }"
+          :meta="tableMeta"
+          :loading="status === 'pending'"
+          :empty="emptyText"
+        >
+          <template v-for="column in sortableColumns" #[`${column.field}-header`]>
+            <button
+              type="button"
+              class="inline-flex items-end gap-1 text-left font-semibold hover:text-primary"
+              :aria-label="sortLabel(column.field, column.label)"
+              @click="toggleSort(column.field)"
+            >
+              {{ column.label }}
+              <UIcon :name="sortIcon(column.field)" class="mb-0.5 size-4 shrink-0" :class="sort.field === column.field ? 'text-primary' : 'text-muted'" />
+            </button>
+          </template>
+
+          <template #name-cell="{ row }">
+            <div class="flex items-center gap-2">
+              <NuxtLink :to="localePath(`/${slug}/items/${row.original.slug}`)" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
+              <UBadge v-if="row.original.lowData" color="neutral" variant="subtle" size="sm">{{ $t('common.lowData') }}</UBadge>
             </div>
           </template>
-        </UTooltip>
-      </p>
+          <template #price-cell="{ row }">{{ orDash(row.original.price, formatPrice) }}</template>
+          <template #logReturn-cell="{ row }">
+            <span :class="returnClass(row.original.logReturn)">{{ orDash(row.original.logReturn, formatReturn) }}</span>
+          </template>
+          <template #residual-cell="{ row }">
+            <span :class="returnClass(row.original.residual)">{{ orDash(row.original.residual, formatReturn) }}</span>
+          </template>
+          <template #residualMad-cell="{ row }">{{ orDash(row.original.residualMad, formatPercent) }}</template>
+          <template #beta-cell="{ row }">{{ orDash(row.original.beta, (value) => value.toFixed(2)) }}</template>
+          <template #observations-cell="{ row }">
+            <span :class="row.original.lowData ? 'text-muted' : ''">{{ row.original.observations }}</span>
+          </template>
+          <template #units-cell="{ row }">
+            <span :class="weightClass(row.original.returnWeight)">{{ formatUnits(row.original.units) }}</span>
+          </template>
+          <template #sparkline-cell="{ row }">
+            <ItemSparkline :points="row.original.sparkline" />
+          </template>
+        </UTable>
 
-      <UTable
-        :data="items.data"
-        :columns="columns"
-        :ui="{ th: 'align-bottom' }"
-        :meta="tableMeta"
-        :loading="status === 'pending'"
-        :empty="emptyText"
-      >
-        <template v-for="column in sortableColumns" #[`${column.field}-header`]>
-          <button
-            type="button"
-            class="inline-flex items-end gap-1 text-left font-semibold hover:text-primary"
-            :aria-label="sortLabel(column.field, column.label)"
-            @click="toggleSort(column.field)"
-          >
-            {{ column.label }}
-            <UIcon :name="sortIcon(column.field)" class="mb-0.5 size-4 shrink-0" :class="sort.field === column.field ? 'text-primary' : 'text-muted'" />
-          </button>
-        </template>
-
-        <template #name-cell="{ row }">
-          <div class="flex items-center gap-2">
-            <NuxtLink :to="localePath(`/${slug}/items/${row.original.slug}`)" class="hover:text-primary">{{ row.original.name }}</NuxtLink>
-            <UBadge v-if="row.original.lowData" color="neutral" variant="subtle" size="sm">{{ $t('common.lowData') }}</UBadge>
-          </div>
-        </template>
-        <template #price-cell="{ row }">{{ orDash(row.original.price, formatPrice) }}</template>
-        <template #logReturn-cell="{ row }">
-          <span :class="returnClass(row.original.logReturn)">{{ orDash(row.original.logReturn, formatReturn) }}</span>
-        </template>
-        <template #residual-cell="{ row }">
-          <span :class="returnClass(row.original.residual)">{{ orDash(row.original.residual, formatReturn) }}</span>
-        </template>
-        <template #residualMad-cell="{ row }">{{ orDash(row.original.residualMad, formatPercent) }}</template>
-        <template #beta-cell="{ row }">{{ orDash(row.original.beta, (value) => value.toFixed(2)) }}</template>
-        <template #observations-cell="{ row }">
-          <span :class="row.original.lowData ? 'text-muted' : ''">{{ row.original.observations }}</span>
-        </template>
-        <template #units-cell="{ row }">
-          <span :class="weightClass(row.original.returnWeight)">{{ formatUnits(row.original.units) }}</span>
-        </template>
-        <template #sparkline-cell="{ row }">
-          <ItemSparkline :points="row.original.sparkline" />
-        </template>
-      </UTable>
-
-      <div v-if="items.meta.lastPage > 1" class="flex justify-center">
-        <UPagination
-          :page="page"
-          :total="items.meta.total"
-          :items-per-page="items.meta.perPage"
-          :sibling-count="1"
-          @update:page="setPage"
-        />
-      </div>
-    </template>
+        <div v-if="items.meta.lastPage > 1" class="flex justify-center">
+          <UPagination
+            :page="page"
+            :total="items.meta.total"
+            :items-per-page="items.meta.perPage"
+            :sibling-count="1"
+            @update:page="setPage"
+          />
+        </div>
+      </template>
+    </div>
   </div>
 </template>

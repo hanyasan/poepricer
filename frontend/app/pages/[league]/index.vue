@@ -48,8 +48,12 @@ const columns = computed<TableColumn<UnusualMove>[]>(() => [
       :actions="[{ label: $t('common.retry'), onClick: () => refresh() }]"
     />
 
-    <div v-else-if="!overview" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <USkeleton v-for="index in 4" :key="index" class="h-24" />
+    <div v-else-if="!overview" class="space-y-6">
+      <KpiSkeletonGrid />
+      <div class="space-y-3">
+        <USkeleton class="h-7 w-48" />
+        <USkeleton class="h-72" />
+      </div>
     </div>
 
     <p v-else-if="overview.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>

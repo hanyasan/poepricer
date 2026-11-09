@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import { use } from 'echarts/core'
-import { LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
-import VChart from 'vue-echarts'
 import type { ItemBeta } from '~/types/metrics'
-
-use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{ betas: ItemBeta[] }>()
 
@@ -53,9 +46,5 @@ const option = computed(() => ({
 </script>
 
 <template>
-  <div class="h-48 w-full">
-    <ClientOnly>
-      <VChart :option="option" autoresize />
-    </ClientOnly>
-  </div>
+  <ChartFrame :option="option" class="h-48 w-full" />
 </template>
