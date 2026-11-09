@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 #[Signature('poe:metrics:mix-item
     {league : Id of the league from poe_leagues}
     {trade_id : Trade id of the exchange item of the league to add as a metrics currency}')]
-#[Description('Add one currency to the metrics items of a league with the 80th percentile of its latest prices as min price')]
+#[Description('Add one currency to the metrics items of a league with the configured percentile of its latest prices as min price')]
 final class MixExchangeMetricsItemCommand extends Command
 {
     /**

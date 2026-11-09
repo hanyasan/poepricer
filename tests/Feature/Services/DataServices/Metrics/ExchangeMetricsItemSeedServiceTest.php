@@ -29,7 +29,7 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
         $this->type = $this->exchangeType('type-seed');
     }
 
-    public function test_it_seeds_the_min_price_so_that_the_top_fifth_of_items_passes(): void
+    public function test_it_seeds_the_min_price_as_the_configured_percentile_of_item_prices(): void
     {
         $this->item($this->league, 'divine');
         $rates = [];
@@ -44,7 +44,8 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
         $result = $this->seedLeague();
 
         $this->assertSame(ExchangeMetricsSeedStatusEnum::Seeded, $result->status);
-        $this->assertEqualsWithDelta(4.2, $this->minPrice('divine'), 1e-6);
+        // default percentile 0.6: position 0.6 * 4 = 2.4 over the prices [1..5]
+        $this->assertEqualsWithDelta(3.4, $this->minPrice('divine'), 1e-6);
         $this->assertSame(5, $result->items[0]['sample_size']);
     }
 
@@ -65,8 +66,9 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
 
         $this->seedLeague();
 
-        $this->assertEqualsWithDelta(18.0, $this->minPrice('divine'), 1e-6);
-        $this->assertEqualsWithDelta(1800.0, $this->minPrice('chaos'), 1e-6);
+        // prices [10, 20] in divine and [1000, 2000] in chaos, position 0.6 over each
+        $this->assertEqualsWithDelta(16.0, $this->minPrice('divine'), 1e-6);
+        $this->assertEqualsWithDelta(1600.0, $this->minPrice('chaos'), 1e-6);
     }
 
     public function test_it_leaves_out_the_currency_itself_and_items_with_a_non_positive_rate(): void
@@ -90,7 +92,8 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
 
         $this->assertSame(2, $sampleSizes['DIVINE']);
         $this->assertSame(1, $sampleSizes['CHAOS']);
-        $this->assertEqualsWithDelta(802.0, $this->minPrice('divine'), 1e-6);
+        // prices [10, 1000]: the non-positive rate is left out, position 0.6 over the two left
+        $this->assertEqualsWithDelta(604.0, $this->minPrice('divine'), 1e-6);
     }
 
     public function test_it_uses_the_latest_price_check_only(): void
@@ -169,7 +172,7 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
         $this->assertSame(0, ExchangeMetricsItem::query()->where('poe_league_id', $other->id)->count());
     }
 
-    public function test_mix_adds_the_currency_with_the_80th_percentile_of_prices_in_it(): void
+    public function test_mix_adds_the_currency_with_the_configured_percentile_of_prices_in_it(): void
     {
         $this->item($this->league, 'divine');
         $this->item($this->league, 'mirror');
@@ -184,9 +187,9 @@ class ExchangeMetricsItemSeedServiceTest extends FeatureTestCase
 
         $result = $this->mixLeague('mirror');
 
-        // prices in mirror are [0.1, 0.2, 0.3, 0.4], position 0.8 * 3 = 2.4
+        // prices in mirror are [0.1, 0.2, 0.3, 0.4], position 0.6 * 3 = 1.8
         $this->assertSame(ExchangeMetricsMixStatusEnum::Added, $result->status);
-        $this->assertEqualsWithDelta(0.34, $this->minPrice('mirror'), 1e-6);
+        $this->assertEqualsWithDelta(0.28, $this->minPrice('mirror'), 1e-6);
         $this->assertSame(4, $result->sample_size);
         $this->assertSame('MIRROR', $result->name);
     }

@@ -20,7 +20,7 @@ export interface ItemMetricRow {
   slug: string
   name: string
   category: string | null
-  /** Price in the selected currency; `null` when the item has no metrics in the last bucket. */
+  /** Freshest price in the selected currency, from the latest snapshot; falls back to the last bucket. */
   price: number | null
   logReturn: number | null
   residual: number | null
@@ -51,6 +51,8 @@ export interface ItemsPageMeta extends PaginatedMeta {
   currency: string | null
   /** Start of the bucket the metrics are taken from; `null` when none is calculated yet. */
   lastBucket: string | null
+  /** Moment of the snapshot the freshest prices come from; `null` when the league has none. */
+  lastSnapshotAt: string | null
 }
 
 export interface ItemsPage {
@@ -192,6 +194,10 @@ export interface ItemSummary {
   lastBucket: string | null
   /** `null` when the item has no metrics in the last bucket. */
   current: ItemCurrent | null
+  /** Freshest price in the selected currency, from the latest snapshot. */
+  currentPrice: number | null
+  /** Moment of the snapshot the freshest price comes from. */
+  currentPriceAt: string | null
   /** `null` when the beta was never calculated. */
   beta: ItemBeta | null
 }

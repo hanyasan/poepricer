@@ -169,8 +169,12 @@ const emptyText = computed(() => {
         </UButton>
       </div>
 
-      <p class="flex items-center gap-1.5 text-sm text-muted">
+      <p class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
         {{ $t('items.found', { total: items.meta.total }) }}
+        <template v-if="items.meta.lastSnapshotAt">
+          <span>·</span>
+          <span>{{ $t('common.updated') }} <LocalDateTime :value="items.meta.lastSnapshotAt" /></span>
+        </template>
         <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
           <NuxtLink :to="localePath('/about/metrics')" :aria-label="$t('items.help.label')" class="inline-flex hover:text-primary">
             <UIcon name="i-lucide-circle-help" class="size-4" />

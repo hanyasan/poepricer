@@ -13,8 +13,9 @@ use Carbon\CarbonImmutable;
 interface ExchangeItemTableRepositoryContract
 {
     /**
-     * A page of the items of the league with their metrics of the bucket and their
-     * latest beta. Items without metrics in the bucket are kept with null metrics.
+     * A page of the items of the league with their metrics of the bucket, their latest
+     * beta and their price from the latest price check. Items without metrics in the
+     * bucket are kept with null metrics.
      * Rows without the sorted value go last, ties are broken by the item id.
      *
      * @return PaginatedResultDto<ItemTableRowDto>
@@ -22,6 +23,7 @@ interface ExchangeItemTableRepositoryContract
     public function paginate(
         int $leagueId,
         int $metricsItemId,
+        string $currencyTradeId,
         CarbonImmutable $bucketStart,
         ItemsFilterDto $filter,
         ItemsSortDto $sort,

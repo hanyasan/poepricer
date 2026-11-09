@@ -5,6 +5,7 @@ namespace App\Jobs\Fetch;
 use App\DataTransferObjects\RepositoryObjects\PoeVersionDto;
 use App\Services\DataServices\Poe\PoeVersionServiceContract;
 use App\Services\NinjaImport\NinjaLeaguePricerServiceContract;
+use App\Utility\Queue\FanOutStagger;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\Tries;
@@ -39,14 +40,16 @@ final class FetchPoeTwoPricesJob implements ShouldQueue
     public function handle(
         NinjaLeaguePricerServiceContract $pricerService,
         PoeVersionServiceContract $versionService,
+        FanOutStagger $stagger,
     ): void {
         /** @var PoeVersionDto $version */
         $version = collect($versionService->getAll())->firstWhere('version', 'poe2');
 
         $leagues = $pricerService->pickLeaguesForCheck($version);
 
-        foreach ($leagues as $league) {
-            FetchLeagueExchangePricesJob::dispatch($league);
+        foreach ($leagues->values() as $index => $league) {
+            FetchLeagueExchangePricesJob::dispatch($league)
+                ->delay($stagger->delayFor($index));
         }
     }
 }

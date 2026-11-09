@@ -15,8 +15,6 @@ use Illuminate\Support\Facades\Cache;
 
 final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsItemSeedServiceContract
 {
-    private const float TOP_PERCENTILE = 0.8;
-
     public function __construct(
         private ExchangeMetricsItemRepositoryContract $metricsItemRepository,
         private ExchangeItemRepositoryContract $exchangeItemRepository,
@@ -41,7 +39,7 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
         $items = [];
 
         foreach ($this->priceCheckRepository->getPricesByCurrency($priceCheckId) as $currencyItemId => $currency) {
-            $minPrice = $this->statistics->percentile($currency['prices'], self::TOP_PERCENTILE);
+            $minPrice = $this->statistics->percentile($currency['prices'], $this->minPricePercentile());
 
             $rows[] = [
                 'poe_league_id' => $leagueId,
@@ -101,7 +99,7 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
             return new ExchangeMetricsMixResultDto(ExchangeMetricsMixStatusEnum::NoPricedItems, $item->name);
         }
 
-        $minPrice = $this->statistics->percentile($prices, self::TOP_PERCENTILE);
+        $minPrice = $this->statistics->percentile($prices, $this->minPricePercentile());
 
         $this->metricsItemRepository->insertMany([[
             'poe_league_id' => $leagueId,
@@ -116,6 +114,11 @@ final readonly class ExchangeMetricsItemSeedService implements ExchangeMetricsIt
             $minPrice,
             count($prices),
         );
+    }
+
+    private function minPricePercentile(): float
+    {
+        return (float) config('poe.metrics.basket_min_price_percentile');
     }
 
     private function flushLeagueMetricsItems(int $leagueId): void

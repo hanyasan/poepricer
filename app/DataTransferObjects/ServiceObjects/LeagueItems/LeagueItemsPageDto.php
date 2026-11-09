@@ -15,5 +15,6 @@ final readonly class LeagueItemsPageDto
         public int $perPage,
         public ?string $currency,
         public ?string $lastBucket,
+        public ?string $lastSnapshotAt = null,
     ) {}
 }

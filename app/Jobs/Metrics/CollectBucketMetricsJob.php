@@ -3,6 +3,7 @@
 namespace App\Jobs\Metrics;
 
 use App\Repositories\Poe\PoeLeagueRepositoryContract;
+use App\Utility\Queue\FanOutStagger;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\Tries;
@@ -34,10 +35,11 @@ final class CollectBucketMetricsJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(PoeLeagueRepositoryContract $leagueRepository): void
+    public function handle(PoeLeagueRepositoryContract $leagueRepository, FanOutStagger $stagger): void
     {
-        foreach ($leagueRepository->getActiveIdsWithMetricsItems() as $leagueId) {
-            CollectBucketMetricsForLeagueJob::dispatch($leagueId);
+        foreach (array_values($leagueRepository->getActiveIdsWithMetricsItems()) as $index => $leagueId) {
+            CollectBucketMetricsForLeagueJob::dispatch($leagueId)
+                ->delay($stagger->delayFor($index));
         }
     }
 }

@@ -197,8 +197,10 @@ return [
     */
 
     'defaults' => [
-        // FetchPoeOnePricesJob, FetchPoeTwoPricesJob and SyncPoeLeaguesJob.
-        // Short HTTP-bound jobs, so they can run in parallel.
+        // FetchPoeOnePricesJob, FetchPoeTwoPricesJob, the metrics jobs and SyncPoeLeaguesJob.
+        // Short HTTP-bound jobs, so they can run in parallel. The number of attempts is set
+        // by the #[Tries] attribute of each job, never here: a value in this file overrides it.
+        // A job without the attribute gets the Horizon default of unlimited attempts.
         'supervisor-scheduled' => [
             'connection' => 'redis',
             'queue' => ['scheduled'],
@@ -208,7 +210,6 @@ return [
             'maxTime' => 3600,
             'maxJobs' => 0,
             'memory' => 256,
-            'tries' => 1,
             'timeout' => 60,
             'nice' => 0,
         ],
@@ -224,7 +225,6 @@ return [
             'maxTime' => 3600,
             'maxJobs' => 0,
             'memory' => 256,
-            'tries' => 1,
             'timeout' => 80,
             'nice' => 0,
         ],

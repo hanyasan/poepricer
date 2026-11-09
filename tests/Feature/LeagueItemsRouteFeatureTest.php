@@ -51,6 +51,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
                     'total' => 0,
                     'currency' => null,
                     'lastBucket' => null,
+                    'lastSnapshotAt' => null,
                 ],
             ]);
     }
@@ -88,7 +89,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
 
         $this->assertSame(['data', 'meta'], array_keys($json));
         $this->assertSame(
-            ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 1, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00'],
+            ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 1, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00', 'lastSnapshotAt' => null],
             $json['meta'],
         );
         $this->assertSame(
@@ -113,6 +114,33 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
             ],
             $json['data'][0],
         );
+    }
+
+    public function test_the_price_comes_from_the_latest_snapshot_and_is_marked_with_its_moment(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Fresh Price League');
+        $item = $this->categorizedItem($league, 'exalted', 'Currency');
+        $this->metric($metricsItem, $item, self::LAST_BUCKET, ['price' => 2.5]);
+        $this->snapshot($league, $this->exchangeType(), '2030-01-10 14:00:00', ['exalted' => 7.5]);
+
+        $json = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency")->assertOk()->json();
+
+        $this->assertSame(7.5, $json['data'][0]['price']);
+        $this->assertSame('2030-01-10T14:00:00+00:00', $json['meta']['lastSnapshotAt']);
+    }
+
+    public function test_an_item_missing_from_the_latest_snapshot_keeps_the_bucket_price(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Fresh Fallback League');
+        $item = $this->categorizedItem($league, 'exalted', 'Currency');
+        $this->categorizedItem($league, 'mirror', 'Currency');
+        $this->metric($metricsItem, $item, self::LAST_BUCKET, ['price' => 2.5]);
+        $this->snapshot($league, $this->exchangeType(), '2030-01-10 14:00:00', ['mirror' => 90.5]);
+
+        $row = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency")->assertOk()->json('data.0');
+
+        $this->assertSame('exalted', $row['slug']);
+        $this->assertSame(2.5, $row['price']);
     }
 
     public function test_items_without_metrics_in_the_last_bucket_are_kept_with_null_metrics(): void
@@ -346,7 +374,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
 
         $this->assertSame(['c', 'd'], $this->slugs($second['data']));
         $this->assertSame(
-            ['currentPage' => 2, 'lastPage' => 3, 'perPage' => 2, 'total' => 5, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00'],
+            ['currentPage' => 2, 'lastPage' => 3, 'perPage' => 2, 'total' => 5, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00', 'lastSnapshotAt' => null],
             $second['meta'],
         );
         $this->assertSame(['e'], $this->slugs($last['data']));

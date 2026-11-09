@@ -3,12 +3,18 @@
 namespace App\Repositories\Poe\Exchange\Metrics;
 
 use App\Models\Poe\Exchange\ExchangeItemPrice;
+use App\Models\Poe\Exchange\PriceCheck;
+use App\Utility\Statistics\RobustStatistics;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ExchangeBucketPriceRepository implements ExchangeBucketPriceRepositoryContract
 {
+    public function __construct(
+        private RobustStatistics $statistics,
+    ) {}
+
     /**
      * The stored rate is expressed in the core's primary currency, so it is
      * multiplied by the core's rate of the requested currency. Units are the items
@@ -54,5 +60,55 @@ final readonly class ExchangeBucketPriceRepository implements ExchangeBucketPric
         }
 
         return $prices;
+    }
+
+    /**
+     * @return array{snapshot_at: string|null, prices: array<int, float>}
+     */
+    #[\Override]
+    public function getLatestPrices(int $leagueId, string $currencyTradeId): array
+    {
+        $latest = PriceCheck::query()
+            ->where('poe_league_id', $leagueId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->toBase()
+            ->first(['id', 'created_at']);
+
+        if ($latest === null) {
+            return ['snapshot_at' => null, 'prices' => []];
+        }
+
+        $rows = ExchangeItemPrice::query()
+            ->join('price_check_cores', 'price_check_cores.id', '=', 'exchange_item_prices.price_check_core_id')
+            ->join('price_check_core_types', static function (JoinClause $join) use ($currencyTradeId): void {
+                $join->on('price_check_core_types.price_check_core_id', '=', 'price_check_cores.id')
+                    ->where('price_check_core_types.exchange_item_trade_id', '=', $currencyTradeId);
+            })
+            ->where('price_check_cores.price_check_id', (int) $latest->id)
+            ->where('exchange_item_prices.rate', '>', 0)
+            ->where('price_check_core_types.rate', '>', 0)
+            ->select([
+                'exchange_item_prices.exchange_item_id',
+                DB::raw('exchange_item_prices.rate * price_check_core_types.rate as price'),
+            ])
+            ->toBase()
+            ->get();
+
+        $samples = [];
+
+        foreach ($rows as $row) {
+            $samples[(int) $row->exchange_item_id][] = (float) $row->price;
+        }
+
+        // A currency is priced by every core of the check, so the item price is their median,
+        // the same way a bucket summarizes its snapshots.
+        $prices = [];
+
+        foreach ($samples as $itemId => $values) {
+            $prices[$itemId] = $this->statistics->median($values);
+        }
+
+        return ['snapshot_at' => (string) $latest->created_at, 'prices' => $prices];
     }
 }

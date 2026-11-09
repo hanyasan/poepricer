@@ -20,6 +20,7 @@ use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Enums\Tags\MetricsItemTagEnum;
 use App\Exceptions\Item\ExchangeItemNotFoundException;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
+use App\Repositories\Poe\Exchange\Metrics\ExchangeBucketPriceRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemDetailRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
 use App\Utility\Metrics\ItemMetricFlags;
@@ -33,6 +34,7 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
         private ExchangeMetricsRepositoryContract $metricsRepository,
         private ExchangeItemRepositoryContract $itemRepository,
         private ExchangeItemDetailRepositoryContract $detailRepository,
+        private ExchangeBucketPriceRepositoryContract $bucketPriceRepository,
         private ItemMetricFlags $flags,
     ) {}
 
@@ -46,7 +48,8 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
             return new ItemSummaryDto($this->info($this->findItem($league->id, $itemSlug)), null, null, null, null);
         }
 
-        return Cache::tags([
+        /** @var ItemSummaryDto $summary */
+        $summary = Cache::tags([
             BucketMetricsTagEnum::bucket_metrics_league_id->name.$league->id,
             BetasMetricsTagEnum::betas_metrics_league_id->name.$league->id,
             MetricsItemTagEnum::metrics_items_league_id->name.$league->id,
@@ -56,6 +59,11 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
             CacheTtlEnum::HOUR->jiggle(),
             fn (): ItemSummaryDto => $this->buildSummary($league->id, $metricsItem, $itemSlug),
         );
+
+        // The freshest price is not cached: it changes with every price check, not every hour.
+        $item = $this->findItem($league->id, $itemSlug);
+
+        return $this->withCurrentPrice($summary, $league->id, $item);
     }
 
     #[\Override]
@@ -145,6 +153,25 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
             lastBucket: $latest?->bucket_start,
             current: $metric === null ? null : $this->current($metric),
             beta: $this->detailRepository->findLatestBeta($metricsItem->id, $item->id),
+        );
+    }
+
+    private function withCurrentPrice(ItemSummaryDto $summary, int $leagueId, ExchangeItemDto $item): ItemSummaryDto
+    {
+        if ($summary->currency === null) {
+            return $summary;
+        }
+
+        $latestPrices = $this->bucketPriceRepository->getLatestPrices($leagueId, $summary->currency);
+
+        return new ItemSummaryDto(
+            item: $summary->item,
+            currency: $summary->currency,
+            lastBucket: $summary->lastBucket,
+            current: $summary->current,
+            beta: $summary->beta,
+            currentPrice: $latestPrices['prices'][$item->id] ?? null,
+            currentPriceAt: $latestPrices['snapshot_at'],
         );
     }
 
