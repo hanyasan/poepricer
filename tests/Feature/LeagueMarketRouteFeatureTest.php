@@ -113,18 +113,18 @@ class LeagueMarketRouteFeatureTest extends FeatureTestCase
     {
         [$league, $metricsItem] = $this->marketLeague('Market Bins League');
 
-        foreach ([-0.3, -0.055, 0.0, 0.004, 0.0455, 0.2] as $index => $logReturn) {
+        foreach ([-0.4, -0.055, 0.0, 0.004, 0.0455, 0.35] as $index => $logReturn) {
             $this->bucketItem($league, $metricsItem, "item-{$index}", self::LAST_BUCKET, $logReturn);
         }
 
         $bins = $this->getJson("/api/leagues/{$league->slug}/market/distribution")->assertOk()->json('bins');
 
-        $this->assertCount(22, $bins);
-        $this->assertSame(['from' => null, 'to' => -0.1, 'count' => 1], $bins[0]);
-        $this->assertSame(['from' => 0.1, 'to' => null, 'count' => 1], $bins[21]);
-        $this->assertSame(['from' => -0.06, 'to' => -0.05, 'count' => 1], $bins[5]);
-        $this->assertEquals(['from' => 0.0, 'to' => 0.01, 'count' => 2], $bins[11]);
-        $this->assertSame(['from' => 0.04, 'to' => 0.05, 'count' => 1], $bins[15]);
+        $this->assertCount(32, $bins);
+        $this->assertSame(['from' => null, 'to' => -0.3, 'count' => 1], $bins[0]);
+        $this->assertSame(['from' => 0.3, 'to' => null, 'count' => 1], $bins[31]);
+        $this->assertSame(['from' => -0.06, 'to' => -0.04, 'count' => 1], $bins[13]);
+        $this->assertEquals(['from' => 0.0, 'to' => 0.02, 'count' => 2], $bins[16]);
+        $this->assertSame(['from' => 0.04, 'to' => 0.06, 'count' => 1], $bins[18]);
         $this->assertSame(6, array_sum(array_column($bins, 'count')));
     }
 

@@ -11,6 +11,7 @@ use App\Models\Poe\Exchange\Metrics\ExchangeMetricsItem;
 use App\Models\Poe\PoeLeague;
 use App\Services\DataServices\Metrics\ExchangeMetricsServiceContract;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Tests\Concerns\BuildsExchangeMetricsData;
 use Tests\FeatureTestCase;
 
@@ -408,7 +409,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
 
-        $beta = ExchangeItemBeta::query()->sole();
+        $beta = $this->betas()->sole();
         $weight = 8 / (8 + 14);
 
         $this->assertSame($this->itemA->id, $beta->exchange_item_id);
@@ -426,7 +427,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
 
-        $this->assertSame(0, ExchangeItemBeta::query()->count());
+        $this->assertSame(0, $this->betas()->count());
     }
 
     public function test_it_skips_items_when_the_market_did_not_move(): void
@@ -435,7 +436,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
 
-        $this->assertSame(0, ExchangeItemBeta::query()->count());
+        $this->assertSame(0, $this->betas()->count());
     }
 
     public function test_it_ignores_returns_older_than_the_window(): void
@@ -444,7 +445,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
 
-        $this->assertSame(0, ExchangeItemBeta::query()->count());
+        $this->assertSame(0, $this->betas()->count());
     }
 
     public function test_recalculating_at_the_same_moment_keeps_one_record(): void
@@ -454,7 +455,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
 
-        $this->assertSame(1, ExchangeItemBeta::query()->count());
+        $this->assertSame(1, $this->betas()->count());
     }
 
     public function test_recalculating_later_keeps_the_history(): void
@@ -464,7 +465,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 00:00:00'));
         $this->service()->recalculateBetas($this->league->id, $this->at('2030-01-08 12:00:00'));
 
-        $this->assertSame(2, ExchangeItemBeta::query()->count());
+        $this->assertSame(2, $this->betas()->count());
     }
 
     /**
@@ -495,6 +496,16 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
     private function marketMetricsCount(PoeLeague $league): int
     {
         return ExchangeMarketMetric::query()->where('poe_league_id', $league->id)->count();
+    }
+
+    /**
+     * Betas of the metrics item under test, the database also holds rows of the other leagues.
+     *
+     * @return Builder<ExchangeItemBeta>
+     */
+    private function betas(): Builder
+    {
+        return ExchangeItemBeta::query()->where('exchange_metrics_item_id', $this->divineMetrics->id);
     }
 
     private function itemMetrics(?string $bucketStart = null): array

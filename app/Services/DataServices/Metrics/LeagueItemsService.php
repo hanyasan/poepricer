@@ -2,6 +2,7 @@
 
 namespace App\Services\DataServices\Metrics;
 
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ItemPricePointDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ItemTableRowDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\ItemsFilterDto;
@@ -11,7 +12,13 @@ use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemRowDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemsPageDto;
 use App\DataTransferObjects\ServiceObjects\PaginationDto;
 use App\Enums\CacheTtlEnum;
+use App\Enums\ItemsSortFieldEnum;
+use App\Enums\SortDirectionEnum;
+use App\Enums\Tags\BetasMetricsTagEnum;
+use App\Enums\Tags\BucketMetricsTagEnum;
+use App\Enums\Tags\ExchangePriceTagEnum;
 use App\Enums\Tags\ItemCategoryTagEnum;
+use App\Enums\Tags\MetricsItemTagEnum;
 use App\Repositories\Poe\Exchange\ExchangeItem\ExchangeItemRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeItemTableRepositoryContract;
 use App\Repositories\Poe\Exchange\Metrics\ExchangeMetricsRepositoryContract;
@@ -62,6 +69,51 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
             return $this->emptyPage($pagination, null);
         }
 
+        if (! $this->isDefaultQuery($filter, $sort, $pagination)) {
+            return $this->buildPage($league->id, $metricsItem, $filter, $sort, $pagination);
+        }
+
+        return Cache::tags([
+            BucketMetricsTagEnum::bucket_metrics_league_id->name.$league->id,
+            BetasMetricsTagEnum::betas_metrics_league_id->name.$league->id,
+            ExchangePriceTagEnum::price_get->name,
+            ExchangePriceTagEnum::price_league_id->name.$league->id,
+            MetricsItemTagEnum::metrics_items_league_id->name.$league->id,
+        ])->remember(
+            'leagueItemsPage:'.$league->id.':'.$metricsItem->exchange_item->trade_id,
+            CacheTtlEnum::HOUR->jiggle(),
+            fn (): LeagueItemsPageDto => $this->buildPage($league->id, $metricsItem, $filter, $sort, $pagination),
+        );
+    }
+
+    /**
+     * The page the frontend opens the table with: the default main currency, the
+     * default sort and the first page. Only it is cached, every other combination
+     * of the query parameters is built on every request.
+     */
+    private function isDefaultQuery(ItemsFilterDto $filter, ItemsSortDto $sort, PaginationDto $pagination): bool
+    {
+        return in_array(
+            $filter->currency,
+            [null, (string) config('poe.base.default_main_trade_id')],
+            true,
+        )
+            && $filter->search === null
+            && $filter->category === null
+            && ! $filter->uncategorized
+            && $sort->field === ItemsSortFieldEnum::Units
+            && $sort->direction === SortDirectionEnum::Desc
+            && $pagination->page === 1
+            && $pagination->perPage === (int) config('poe.items.per_page');
+    }
+
+    private function buildPage(
+        int $leagueId,
+        ExchangeMetricsItemDto $metricsItem,
+        ItemsFilterDto $filter,
+        ItemsSortDto $sort,
+        PaginationDto $pagination,
+    ): LeagueItemsPageDto {
         $currency = $metricsItem->exchange_item->trade_id;
         $latest = $this->metricsRepository->findLatestMarketMetric($metricsItem->id);
 
@@ -71,7 +123,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
 
         $bucket = CarbonImmutable::parse($latest->bucket_start)->utc();
         $page = $this->itemTableRepository->paginate(
-            $league->id,
+            $leagueId,
             $metricsItem->id,
             $currency,
             $bucket,
@@ -97,7 +149,7 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
             perPage: $pagination->perPage,
             currency: $currency,
             lastBucket: $latest->bucket_start,
-            lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($league->id),
+            lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($leagueId),
         );
     }
 

@@ -36,8 +36,8 @@ return [
     'market' => [
         'buckets_limit' => (int) env('MARKET_BUCKETS_LIMIT', 28),
         'flat_threshold' => (float) env('MARKET_FLAT_THRESHOLD', 0.005),
-        'bin_width' => (float) env('MARKET_BIN_WIDTH', 0.01),
-        'bin_range' => (float) env('MARKET_BIN_RANGE', 0.10),
+        'bin_width' => (float) env('MARKET_BIN_WIDTH', 0.02),
+        'bin_range' => (float) env('MARKET_BIN_RANGE', 0.30),
     ],
     'items' => [
         'per_page' => (int) env('ITEMS_PER_PAGE', 50),

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Tags\BucketMetricsTagEnum;
 use App\Enums\Tags\ItemCategoryTagEnum;
 use App\Models\Poe\Exchange\ExchangeItem;
 use App\Models\Poe\Exchange\Metrics\ExchangeItemBeta;
@@ -446,7 +447,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items?{$query}")->assertUnprocessable();
     }
 
-    public function test_the_items_response_is_not_cached(): void
+    public function test_a_non_default_items_query_is_not_cached(): void
     {
         [$league] = $this->leagueWithBucket('Items Not Cached League');
         $this->getJson("/api/leagues/{$league->slug}/items?category=Fresh")->assertOk()->assertJsonPath('meta.total', 0);
@@ -454,6 +455,86 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $this->categorizedItem($league, 'late', 'Fresh');
 
         $this->getJson("/api/leagues/{$league->slug}/items?category=Fresh")->assertJsonPath('meta.total', 1);
+    }
+
+    /**
+     * Each query differs from the default one in a single parameter, and the item
+     * added between the two requests is visible under it.
+     *
+     * @return array<string, array{0: string, 1: ?string}>
+     */
+    public static function nonDefaultQueries(): array
+    {
+        return [
+            'search' => ['search=Ore', null],
+            'category' => ['category=Currency', 'Currency'],
+            'uncategorized' => ['uncategorized=1', null],
+            'another sort field' => ['sort=price', 'Currency'],
+            'another direction' => ['sort=units', 'Currency'],
+            'another page' => ['page=2', 'Currency'],
+            'another per page' => ['perPage=10', 'Currency'],
+            'another currency' => ['currency=chaos', 'Currency'],
+        ];
+    }
+
+    #[DataProvider('nonDefaultQueries')]
+    public function test_a_non_default_query_is_never_cached(string $query, ?string $category): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Not Cached Query League');
+        $chaosMetrics = $this->metricsItem($league, $this->item($league, 'chaos'));
+        ExchangeMarketMetric::factory()->forMetricsItem($chaosMetrics)->atBucket(self::LAST_BUCKET)->create();
+        $this->metric($metricsItem, $this->categorizedItem($league, 'first', 'Currency'), self::LAST_BUCKET);
+
+        $before = $this->getJson("/api/leagues/{$league->slug}/items?{$query}")->assertOk()->json('meta.total');
+
+        $this->categorizedItem($league, 'oreblight', $category, 'Oreblight');
+
+        $this->getJson("/api/leagues/{$league->slug}/items?{$query}")->assertJsonPath('meta.total', $before + 1);
+    }
+
+    public function test_the_default_items_query_is_cached_until_the_league_is_flushed(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Cached Default League');
+        $this->metric($metricsItem, $this->categorizedItem($league, 'first', 'Currency'), self::LAST_BUCKET);
+
+        $this->getJson("/api/leagues/{$league->slug}/items")->assertOk()->assertJsonPath('meta.total', 2);
+
+        $this->metric($metricsItem, $this->categorizedItem($league, 'second', 'Currency'), self::LAST_BUCKET);
+
+        $this->getJson("/api/leagues/{$league->slug}/items")->assertJsonPath('meta.total', 2);
+
+        Cache::tags([BucketMetricsTagEnum::bucket_metrics_league_id->name.$league->id])->flush();
+
+        $this->getJson("/api/leagues/{$league->slug}/items")->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_the_default_items_query_is_cached_per_league(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Cached League');
+        [$other, $otherMetricsItem] = $this->leagueWithBucket('Items Other Cached League');
+        $this->metric($metricsItem, $this->categorizedItem($league, 'one', 'Currency'), self::LAST_BUCKET);
+        $this->metric($otherMetricsItem, $this->categorizedItem($other, 'one', 'Currency'), self::LAST_BUCKET);
+        $this->getJson("/api/leagues/{$league->slug}/items")->assertJsonPath('meta.total', 2);
+
+        $this->metric($otherMetricsItem, $this->categorizedItem($other, 'two', 'Currency'), self::LAST_BUCKET);
+
+        $this->getJson("/api/leagues/{$league->slug}/items")->assertJsonPath('meta.total', 2);
+        $this->getJson("/api/leagues/{$other->slug}/items")->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_the_cached_default_page_keeps_its_rows_and_sparklines(): void
+    {
+        [$league, $metricsItem] = $this->leagueWithBucket('Items Cached Shape League');
+        $item = $this->categorizedItem($league, 'priced', 'Currency');
+        $this->metric($metricsItem, $item, self::LAST_BUCKET, ['price' => 2.5, 'units' => 100.0]);
+        $first = $this->getJson("/api/leagues/{$league->slug}/items")->assertOk()->json('data.0');
+
+        $second = $this->getJson("/api/leagues/{$league->slug}/items")->assertOk()->json('data.0');
+
+        $this->assertSame($first, $second);
+        $this->assertSame('priced', $second['slug']);
+        $this->assertSame(2.5, $second['price']);
+        $this->assertSame([['bucket' => '2030-01-10T12:00:00+00:00', 'value' => 2.5]], $second['sparkline']);
     }
 
     public function test_categories_are_distinct_sorted_and_skip_empty_values(): void

@@ -4,6 +4,7 @@ use App\DataTransferObjects\RepositoryObjects\Exchange\ExchangeItemDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemBetaDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
+use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ItemPricePointDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceCurrencyRowDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceSnapshotRowDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheckDto;
@@ -18,6 +19,8 @@ use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPriceChangeDto;
 use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPricesDto;
 use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPriceStatsDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
+use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemRowDto;
+use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemsPageDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueItemMoveDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueUnusualMoveDto;
@@ -172,6 +175,9 @@ return [
         LeagueItemMoveDto::class,
         LeagueUnusualMoveDto::class,
         LeagueItemCategoriesDto::class,
+        LeagueItemsPageDto::class,
+        LeagueItemRowDto::class,
+        ItemPricePointDto::class,
         MarketDistributionDto::class,
         MarketBreadthDto::class,
         MarketBinDto::class,
