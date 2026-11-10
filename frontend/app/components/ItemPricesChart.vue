@@ -76,10 +76,15 @@ const option = computed(() => ({
     formatter: (params: { axisValue: number; seriesIndex: number; value: [number, number | null] }[]) => {
       const price = params.find((item) => item.seriesIndex === 0)?.value[1]
       const units = params.find((item) => item.seriesIndex === 1)?.value[1]
-      const lines = [formatChartTime(params[0]?.axisValue ?? 0, 48)]
+      const lines = [formatChartTime(params[0]?.axisValue ?? 0, windowHours.value)]
 
-      if (price !== null && price !== undefined) lines.push(`${t('chart.price')}: ${formatPrice(price)} ${props.currencyName}`)
-      if (units !== null && units !== undefined) lines.push(`${t('chart.units')}: ${formatUnits(units)}`)
+      if (price !== null && price !== undefined) {
+        lines.push(t('chart.priceValue', { value: `${formatPrice(price)} ${props.currencyName}` }))
+      }
+
+      if (units !== null && units !== undefined) {
+        lines.push(t('chart.unitsValue', { value: formatUnits(units) }))
+      }
 
       return lines.join('<br>')
     },

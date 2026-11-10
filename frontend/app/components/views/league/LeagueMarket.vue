@@ -2,29 +2,10 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { MarketItem } from '~/types/metrics'
 
-// The distribution is of one bucket, so the period selector of the league header is hidden.
-definePageMeta({ usesPeriod: false })
-
 const route = useRoute()
 const { t } = useI18n()
 const localePath = useLocalePath()
-const { leagueName } = useLeagueName()
 const { rangeLabel } = useBinLabels()
-
-useBreadcrumbSchema(() => [
-  { name: t('layout.leagues'), path: '/' },
-  { name: leagueName.value, path: `/${route.params.league}` },
-  { name: t('league.market') },
-])
-
-useSeoMeta({
-  title: () => t('seo.market.title', { league: leagueName.value }),
-  description: () => t('seo.market.description', { league: leagueName.value }),
-  ogTitle: () => t('seo.market.title', { league: leagueName.value }),
-  ogDescription: () => t('seo.market.description', { league: leagueName.value }),
-  // A chosen bucket or the thinly traded items make a view of the page, not a page of its own.
-  robots: () => (Object.keys(route.query).length > 0 ? 'noindex, follow' : undefined),
-})
 
 const slug = computed(() => route.params.league as string)
 
@@ -65,10 +46,14 @@ const bucketItems = computed(() => {
   // The asked bucket can be older than the latest ones the list holds.
   const starts = [...new Set([...current.buckets, current.bucket])].sort((a, b) => Date.parse(b) - Date.parse(a))
 
-  return starts.map((start) => ({
-    value: start,
-    label: start === current.buckets[0] ? `${formatBucketLabel(start)} (${t('market.latestBucket')})` : formatBucketLabel(start),
-  }))
+  return starts.map((start) => {
+    const range = formatBucketRange(start)
+
+    return {
+      value: start,
+      label: start === current.buckets[0] ? t('market.bucketOptionLatest', { range }) : range,
+    }
+  })
 })
 
 function onBucketChange(value: string): void {
@@ -95,8 +80,6 @@ const columns = computed<TableColumn<MarketItem>[]>(() => [
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-semibold">{{ $t('seo.market.title', { league: leagueName }) }}</h1>
-
     <UAlert
       v-if="bucketMissing"
       color="warning"

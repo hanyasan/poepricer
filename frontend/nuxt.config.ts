@@ -57,6 +57,8 @@ export default defineNuxtConfig({
   // The dark theme is the default until the visitor picks another one.
   colorMode: { preference: 'dark', fallback: 'dark' },
   css: ['~/assets/css/main.css'],
+  // The app uses system fonts only, so the dev server must not wait for the fontshare catalog.
+  fonts: { providers: { fontshare: false } },
   icon: {
     // Outside /api, which is proxied to Laravel.
     localApiEndpoint: '/_nuxt_icon',

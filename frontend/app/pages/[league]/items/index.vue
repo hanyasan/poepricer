@@ -4,7 +4,7 @@ import type { ItemMetricRow } from '~/types/metrics'
 import type { ItemsSortField } from '~/composables/useLeagueItems'
 
 // The table always shows the last bucket, so the period selector of the league header is hidden.
-definePageMeta({ usesPeriod: false })
+definePageMeta({ layout: 'league' })
 
 const route = useRoute()
 const { t } = useI18n()
@@ -131,7 +131,7 @@ const emptyText = computed(() => {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-semibold">{{ $t('seo.items.title', { league: leagueName }) }}</h1>
+    <LeagueTitle>{{ $t('seo.items.title', { league: leagueName }) }}</LeagueTitle>
 
     <div class="space-y-4">
       <UAlert
@@ -233,7 +233,7 @@ const emptyText = computed(() => {
             <span :class="returnClass(row.original.residual)">{{ orDash(row.original.residual, formatReturn) }}</span>
           </template>
           <template #residualMad-cell="{ row }">{{ orDash(row.original.residualMad, formatPercent) }}</template>
-          <template #beta-cell="{ row }">{{ orDash(row.original.beta, (value) => value.toFixed(2)) }}</template>
+          <template #beta-cell="{ row }">{{ orDash(row.original.beta, formatCoefficient) }}</template>
           <template #observations-cell="{ row }">
             <span :class="row.original.lowData ? 'text-muted' : ''">{{ row.original.observations }}</span>
           </template>

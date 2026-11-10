@@ -26,8 +26,10 @@
     "leagues": "Leagues",
     "aboutMetrics": "About metrics",
     "toggleTheme": "Toggle theme",
+    "scrollToTop": "Back to top",
     "switchLanguage": "Switch language to {language}",
     "leagueNotFound": "League not found",
+    "inCurrency": "in {currency}",
     "footerNote": "Prices come from poe.ninja and are refreshed every few minutes"
   },
   "home": {
@@ -38,27 +40,28 @@
     "outOf": "of {total}",
     "updated": "Updated",
     "return7d": "Market price delta, 7d",
-    "intro": "PoE Pricer shows how prices change in Path of Exile and Path of Exile 2: where the whole market is heading and which items behave unusually. The figures are calculated from poe.ninja data.",
+    "intro": "PoE Pricer shows how prices change in Path of Exile and Path of Exile 2: where the whole market is heading and which items behave unusually. The figures are calculated from poe.ninja data",
     "metricsLink": "How the price metrics are calculated"
   },
   "league": {
     "overview": "Overview",
     "items": "Items",
+    "allItems": "All items",
     "market": "Market",
     "currencyLabel": "Metric currency",
     "periods": {
-      "24h": "24 hours",
       "7d": "7 days",
-      "league": "Whole league"
-    }
+      "league": "Whole league",
+      "24h": "24 hours"
+    },
+    "periodLabel": "Chart period"
   },
   "overview": {
     "loadError": "Could not load the league overview",
-    "kpi": {
-      "lastBucketReturn": "Market price delta of the last bucket",
-      "return7d": "Market price delta, 7d",
-      "basketSize": "Items in the market calculation",
-      "updated": "Updated"
+    "totalReturn": "Total delta for {period}:",
+    "totalReturnPeriods": {
+      "7d": "7 days",
+      "league": "the whole league"
     },
     "marketReturn": "Market price delta",
     "unusualMoves": "Unusual moves",
@@ -76,7 +79,6 @@
     "loadError": "Could not load the distribution of moves",
     "bucketLabel": "Bucket",
     "bucketHint": "Bucket to view",
-    "latestBucket": "latest",
     "bucketNotFound": "The league has no such bucket",
     "showLatest": "Show the latest",
     "includeAll": "Include thinly traded items",
@@ -111,7 +113,8 @@
       "ariaLabel": "Chart of the median price delta by item category",
       "median": "Median: {value}",
       "count": "Items: {count}"
-    }
+    },
+    "bucketOptionLatest": "{range} (latest)"
   },
   "items": {
     "loadError": "Could not load the items",
@@ -142,8 +145,8 @@
     "notFoundDescription": "There is no such item in this league",
     "loadError": "Could not load the item",
     "unusualMove": "unusual move",
-    "currentPrice": "Current price: {price} {currency}. The bucket metrics are below.",
-    "noCurrent": "The item has no values in the last bucket ({date}). The data for the selected period is shown below.",
+    "currentPrice": "Current price: {price} {currency}. The bucket metrics are below",
+    "noCurrent": "The item has no values in the last bucket ({date}). The data for the selected period is shown below",
     "kpi": {
       "price": "Price in {currency}",
       "priceChange": "Δ price over the last bucket",
@@ -156,9 +159,9 @@
     "chartsLoadError": "Could not load the charts",
     "noSeries": "The item has no values for the selected period",
     "periodSuffix": {
-      "24h": "over 24 hours",
       "7d": "over 7 days",
-      "league": "over the whole league"
+      "league": "over the whole league",
+      "24h": "over 24 hours"
     },
     "priceTitle": "Price {period}",
     "residualTitle": "Residual {period}",
@@ -174,8 +177,26 @@
       "rSquared": "R²",
       "calculated": "Calculated",
       "notCalculated": "The beta of this item has not been calculated yet",
-      "explanation": "Shows how closely the item follows the market: 1.5 means a 15% rise when the market rises by 10%. With R² close to zero the market explains almost nothing.",
-      "fewRecalculations": "Beta recalculations in the selected period: {count}. The chart needs at least two."
+      "fewRecalculations": "Beta recalculations in the selected period: {count}. The chart needs at least two",
+      "help": {
+        "beta": {
+          "lineOne": "How strongly the item reacts to the movement of the market",
+          "lineTwo": "β = 1 — the item moves with the market, 1.5 — it rises by about 15% when the market rises by 10%",
+          "lineThree": "While there is little data, the estimate is pulled towards 1 so that a short history does not give a random number"
+        },
+        "raw": {
+          "lineOne": "The slope estimate without the pull towards 1: the median of the slopes between all pairs of points in the window",
+          "lineTwo": "It withstands single outliers",
+          "lineThree": "The further it is from β, the fewer observations there are, and the less this figure can be trusted",
+          "lineFour": "It does not enter the calculation of the residual by itself"
+        },
+        "rSquared": {
+          "lineOne": "The squared Pearson correlation between the return of the item and of the market, from 0 to 1",
+          "lineTwo": "It shows what part of the movement of the item the market explains",
+          "lineThree": "Close to 0 — the item lives on its own and has to be judged by its own fluctuation",
+          "lineFour": "High — the item follows the market and its residual is small"
+        }
+      }
     },
     "buckets": {
       "title": "Values by bucket",
@@ -201,7 +222,6 @@
       "change": "Change over {hours} h",
       "min": "Minimum",
       "max": "Maximum",
-      "median": "Median",
       "averageUnits": "Average trades per hour"
     },
     "chartTitle": "Price in {currency} and trades",
@@ -224,33 +244,31 @@
     "bandNone": "Band: —",
     "residualValue": "Residual: {value}",
     "rawBeta": "Raw β",
-    "units": "Trades per hour"
+    "units": "Trades per hour",
+    "priceValue": "Price: {value}",
+    "unitsValue": "Trades per hour: {value}"
   },
   "seo": {
     "home": {
       "title": "Path of Exile prices and metrics",
-      "description": "Price dynamics of Path of Exile and Path of Exile 2 from poe.ninja data: market price delta, unusual item moves, betas and residuals for every league."
+      "description": "Price dynamics of Path of Exile and Path of Exile 2 from poe.ninja data: market price delta, unusual item moves, betas and residuals for every league"
     },
     "league": {
       "title": "{league} market overview",
-      "description": "{league} league: market price delta, unusual price moves, top gainers and losers among the items."
+      "description": "{league} league: market price delta, unusual price moves, top gainers and losers among the items"
     },
     "items": {
       "title": "{league} items",
-      "description": "Prices and metrics of the items of the {league} league: price change, residual, fluctuation, beta and trade count."
+      "description": "Prices and metrics of the items of the {league} league: price change, residual, fluctuation, beta and trade count"
     },
     "item": {
       "title": "{item}: price in {league}",
-      "description": "{item} in the {league} league: price {price} {currency}, price change, residual, beta and history by bucket.",
-      "descriptionNoPrice": "{item} in the {league} league: price change, residual, beta and history by bucket."
-    },
-    "market": {
-      "title": "{league} market",
-      "description": "Distribution of item price moves in the {league} league: how many items grew and fell, a histogram of price deltas and a breakdown by category."
+      "description": "{item} in the {league} league: price {price} {currency}, price change, residual, beta and history by bucket",
+      "descriptionNoPrice": "{item} in the {league} league: price change, residual, beta and history by bucket"
     },
     "metrics": {
       "title": "About metrics",
-      "description": "How the metrics of the site work: the item basket, market price delta, residual, fluctuation, beta and R², and how to read them."
+      "description": "How the metrics of the site work: the item basket, market price delta, residual, fluctuation, beta and R², and how to read them"
     },
     "itemPrices": {
       "title": "{item}: price and trades in {league}",
@@ -269,6 +287,6 @@
     "notFoundDescription": "There is no such page: the address may have changed or the league may be over",
     "home": "Back to the home page",
     "title": "Error",
-    "description": "Something went wrong. Try to reload the page later."
+    "description": "Something went wrong. Try to reload the page later"
   }
 }

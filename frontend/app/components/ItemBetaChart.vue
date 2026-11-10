@@ -24,7 +24,7 @@ const option = computed(() => ({
   },
   series: [
     {
-      name: 'β',
+      name: t('item.beta.beta'),
       type: 'line',
       symbol: 'circle',
       symbolSize,

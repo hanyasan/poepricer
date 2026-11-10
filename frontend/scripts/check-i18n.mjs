@@ -30,16 +30,35 @@ const locales = Object.fromEntries(
 
 // A call `t(...)`, `$t(...)`, `te(...)`, `tm(...)` or an `keypath="..."` attribute. For a call
 // every string literal that looks like a key is taken, which also covers ternaries.
-const callPattern = /(?<![\w.])\$?(?:t|te|tm)\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g
+const callStartPattern = /(?<![\w.])\$?(?:t|te|tm)\(/g
 const literalPattern = /(['"`])([A-Za-z][\w-]*(?:\.[\w${}.-]+)+)\1/g
 const keypathPattern = /keypath=["']([^"']+)["']/g
+
+/**
+ * The arguments of the call that starts at `start`, found by counting parentheses instead of
+ * matching them with a pattern: an argument may hold nested calls such as Math.round(count / total).
+ */
+function callArguments(source, start) {
+  let depth = 0
+
+  for (let index = start; index < source.length; index++) {
+    if (source[index] === '(') depth++
+    if (source[index] === ')') {
+      depth--
+      if (depth === 0) return source.slice(start + 1, index)
+    }
+  }
+
+  return ''
+}
 
 const used = new Map()
 for (const file of listFiles(sourceDir)) {
   const source = readFileSync(file, 'utf8')
   const keys = []
-  for (const call of source.matchAll(callPattern)) {
-    for (const literal of call[1].matchAll(literalPattern)) keys.push(literal[2])
+  for (const call of source.matchAll(callStartPattern)) {
+    const argumentsText = callArguments(source, call.index + call[0].length - 1)
+    for (const literal of argumentsText.matchAll(literalPattern)) keys.push(literal[2])
   }
   for (const match of source.matchAll(keypathPattern)) keys.push(match[1])
   for (const key of keys) {

@@ -2,8 +2,11 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { ItemBucketRow } from '~/types/metrics'
 
+// The item layout renders the heading, the tabs and the summary shared by both tabs.
+definePageMeta({ layout: 'item' })
+
 const route = useRoute()
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { leagueName } = useLeagueName()
 
 const leagueSlug = computed(() => route.params.league as string)
@@ -22,6 +25,15 @@ const { data: history, error: historyError, refresh: refreshHistory } = historyR
 const { data: buckets, status: bucketsStatus, error: bucketsError, refresh: refreshBuckets, page, setPage } = bucketsRequest
 
 const periodLabel = computed(() => t(`item.periodSuffix.${period.value}`))
+
+/** The lines of a tooltip are separate keys, one sentence each, and not every metric has all of them. */
+const HELP_LINES = ['lineOne', 'lineTwo', 'lineThree', 'lineFour'] as const
+
+function betaHelp(metric: 'beta' | 'raw' | 'rSquared'): string[] {
+  return HELP_LINES.filter((line) => te(`item.beta.help.${metric}.${line}`)).map((line) =>
+    t(`item.beta.help.${metric}.${line}`),
+  )
+}
 
 const columns = computed<TableColumn<ItemBucketRow>[]>(() => [
   { accessorKey: 'bucket', header: t('common.columns.bucket') },
@@ -84,29 +96,29 @@ useSeoMeta({
         {{ $t('item.currentPrice', { price: formatPrice(summary.currentPrice), currency: currencyName }) }}
       </p>
 
-      <div v-else-if="summary.current !== null" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiTile :label="$t('item.kpi.price', { currency: currencyName })">
+      <div v-else-if="summary.current !== null" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiTile compact :label="$t('item.kpi.price', { currency: currencyName })">
           {{ formatPrice(summary.currentPrice ?? summary.current.price) }}
           <template v-if="summary.currentPriceAt" #note>
             {{ $t('common.updated') }} <LocalDateTime :value="summary.currentPriceAt" />
           </template>
         </KpiTile>
-        <KpiTile :label="$t('item.kpi.priceChange')">
+        <KpiTile compact :label="$t('item.kpi.priceChange')">
           <span :class="returnClass(summary.current.logReturn)">{{ orDash(summary.current.logReturn, formatReturn) }}</span>
         </KpiTile>
-        <KpiTile :label="$t('item.kpi.residual')">
+        <KpiTile compact :label="$t('item.kpi.residual')">
           <span :class="returnClass(summary.current.residual)">{{ orDash(summary.current.residual, formatReturn) }}</span>
           <template v-if="summary.current.residualMad !== null" #note>
             {{ $t('item.kpi.residualFluctuation', { value: formatPercent(summary.current.residualMad) }) }}
           </template>
         </KpiTile>
-        <KpiTile :label="$t('item.kpi.tradesPerHour')">
+        <KpiTile compact :label="$t('item.kpi.tradesPerHour')">
           <span :class="weightClass(summary.current.returnWeight)">{{ formatUnits(summary.current.units) }}</span>
         </KpiTile>
-        <KpiTile :label="$t('item.kpi.sample')">
+        <KpiTile compact :label="$t('item.kpi.sample')">
           <span :class="summary.current.lowData ? 'text-muted' : ''">{{ summary.current.observations }}</span>
         </KpiTile>
-        <KpiTile :label="$t('item.kpi.bucket')"><LocalDateTime :value="summary.lastBucket" /></KpiTile>
+        <KpiTile compact :label="$t('item.kpi.bucket')"><LocalDateTime :value="summary.lastBucket" /></KpiTile>
       </div>
 
       <UAlert
@@ -122,11 +134,6 @@ useSeoMeta({
 
       <template v-else-if="history">
         <section class="space-y-3">
-          <h3 class="text-lg font-medium">{{ $t('item.priceTitle', { period: periodLabel }) }}</h3>
-          <ItemPriceChart :points="history.series" />
-        </section>
-
-        <section class="space-y-3">
           <h3 class="flex items-center gap-1.5 text-lg font-medium">
             {{ $t('item.residualTitle', { period: periodLabel }) }}
             <InfoTooltip :label="$t('item.residualHelp.label')">
@@ -136,21 +143,25 @@ useSeoMeta({
           </h3>
           <ItemResidualChart :points="history.series" />
         </section>
+
+        <section class="space-y-3">
+          <h3 class="text-lg font-medium">{{ $t('item.priceTitle', { period: periodLabel }) }}</h3>
+          <ItemPriceChart :points="history.series" />
+        </section>
       </template>
 
       <section class="space-y-3">
         <h3 class="text-lg font-medium">{{ $t('item.beta.title') }}</h3>
         <p v-if="summary.beta === null" class="text-muted">{{ $t('item.beta.notCalculated') }}</p>
         <template v-else>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiTile :label="$t('item.beta.beta')">{{ summary.beta.beta.toFixed(2) }}</KpiTile>
-            <KpiTile :label="$t('item.beta.raw')">{{ summary.beta.rawBeta.toFixed(2) }}</KpiTile>
-            <KpiTile :label="$t('item.beta.rSquared')">{{ orDash(summary.beta.rSquared, (value) => value.toFixed(2)) }}</KpiTile>
-            <KpiTile :label="$t('item.beta.calculated')"><LocalDateTime :value="summary.beta.calculatedAt" /></KpiTile>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiTile compact :label="$t('item.beta.beta')" :help="betaHelp('beta')">{{ formatCoefficient(summary.beta.beta) }}</KpiTile>
+            <KpiTile compact :label="$t('item.beta.raw')" :help="betaHelp('raw')">{{ formatCoefficient(summary.beta.rawBeta) }}</KpiTile>
+            <KpiTile compact :label="$t('item.beta.rSquared')" :help="betaHelp('rSquared')">
+              {{ orDash(summary.beta.rSquared, formatCoefficient) }}
+            </KpiTile>
+            <KpiTile compact :label="$t('item.beta.calculated')"><LocalDateTime :value="summary.beta.calculatedAt" /></KpiTile>
           </div>
-          <p class="text-sm text-muted">
-            {{ $t('item.beta.explanation') }}
-          </p>
           <ItemBetaChart v-if="history && history.betaHistory.length >= 2" :betas="history.betaHistory" />
           <p v-else-if="history" class="text-sm text-muted">
             {{ $t('item.beta.fewRecalculations', { count: history.betaHistory.length }) }}

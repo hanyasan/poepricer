@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// The metric currency and period of the league toolbar mean nothing here: the prices have their own.
-definePageMeta({ usesPriceToolbar: true })
+// The metric currency and period of the league mean nothing here: the prices have their own,
+// drawn by the item layout in place of the league toolbar.
+definePageMeta({ layout: 'item' })
 
 const route = useRoute()
 const { t } = useI18n()
@@ -64,7 +65,7 @@ useSeoMeta({
     />
 
     <div v-else-if="!prices" class="space-y-6">
-      <KpiSkeletonGrid :count="9" />
+      <KpiSkeletonGrid :count="8" compact />
       <div class="space-y-3">
         <USkeleton class="h-7 w-72" />
         <USkeleton class="h-96" />
@@ -74,18 +75,17 @@ useSeoMeta({
     <p v-else-if="!prices.stats" class="text-muted">{{ $t('itemPrices.empty') }}</p>
 
     <div v-else :class="status === 'pending' ? 'space-y-6 opacity-60' : 'space-y-6'">
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile :label="$t('itemPrices.kpi.price', { currency: currencyName })">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile compact :label="$t('itemPrices.kpi.price', { currency: currencyName })">
           {{ formatPrice(prices.stats.current.price) }}
           <template #note><LocalDateTime :value="prices.stats.current.at" /></template>
         </KpiTile>
-        <KpiTile v-for="item in changes" :key="item.hours" :label="$t('itemPrices.kpi.change', { hours: item.hours })">
+        <KpiTile v-for="item in changes" :key="item.hours" compact :label="$t('itemPrices.kpi.change', { hours: item.hours })">
           <span :class="returnClass(item.change)">{{ orDash(item.change, formatReturn) }}</span>
         </KpiTile>
-        <KpiTile :label="$t('itemPrices.kpi.min')">{{ formatPrice(prices.stats.min) }}</KpiTile>
-        <KpiTile :label="$t('itemPrices.kpi.max')">{{ formatPrice(prices.stats.max) }}</KpiTile>
-        <KpiTile :label="$t('itemPrices.kpi.median')">{{ formatPrice(prices.stats.median) }}</KpiTile>
-        <KpiTile :label="$t('itemPrices.kpi.averageUnits')">{{ formatUnits(prices.stats.averageUnits) }}</KpiTile>
+        <KpiTile compact :label="$t('itemPrices.kpi.min')">{{ formatPrice(prices.stats.min) }}</KpiTile>
+        <KpiTile compact :label="$t('itemPrices.kpi.max')">{{ formatPrice(prices.stats.max) }}</KpiTile>
+        <KpiTile compact :label="$t('itemPrices.kpi.averageUnits')">{{ formatUnits(prices.stats.averageUnits) }}</KpiTile>
       </div>
 
       <section class="space-y-3">

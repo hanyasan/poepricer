@@ -24,5 +24,6 @@ useSeoMeta({
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <ScrollTopButton />
   </UApp>
 </template>

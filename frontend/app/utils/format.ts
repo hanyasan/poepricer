@@ -74,9 +74,33 @@ export function orDash<T>(value: T | null, format: (value: T) => string): string
   return value === null ? '—' : format(value)
 }
 
+/** A beta or another estimate shown with two decimals: 1.7972 becomes "1.80". */
+export function formatCoefficient(value: number): string {
+  return value.toFixed(2)
+}
+
+/** How many usual fluctuations a residual makes: 2.94 becomes "2.9×". */
+export function formatRatio(value: number): string {
+  return `${value.toFixed(1)}×`
+}
+
 /** A bucket or beta moment as a short label of a chart axis. */
 export function formatBucketLabel(moment: string): string {
   return dateTimeFormatter().format(new Date(moment))
+}
+
+const BUCKET_HOURS = 12
+
+/** A bucket is the 12 hours from its start; the end drops the date when it falls on the same day: "10.11, 00:00 – 12:00". */
+export function formatBucketRange(start: string): string {
+  const from = new Date(start)
+  const to = new Date(from.getTime() + BUCKET_HOURS * 3_600_000)
+  const sameDay = from.toDateString() === to.toDateString()
+  const end = sameDay
+    ? new Intl.DateTimeFormat(intlLanguage(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(to)
+    : dateTimeFormatter().format(to)
+
+  return `${dateTimeFormatter().format(from)} – ${end}`
 }
 
 /** The edge of a histogram bar as a signed percent without a trailing zero: 0.05 becomes "+5%". */

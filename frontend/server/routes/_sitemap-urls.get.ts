@@ -32,7 +32,6 @@ export default defineEventHandler(async (): Promise<SitemapUrlInput[]> => {
     urls.push(
       { loc: `/${league.slug}`, lastmod, ...withLocales },
       { loc: `/${league.slug}/items`, lastmod, ...withLocales },
-      { loc: `/${league.slug}/market`, lastmod, ...withLocales },
     )
 
     let lastPage = 1

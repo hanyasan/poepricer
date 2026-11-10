@@ -114,18 +114,23 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
       id: 'beta',
       title: 'Бета и R²',
       paragraphs: [
-        'Эти два показателя считаются по истории предмета и пересчитываются раз в сутки по данным за последние 7 суток. Старые значения не затираются, поэтому на странице предмета видно, как менялась бета',
+        'Эти показатели считаются по истории предмета и пересчитываются раз в сутки по данным за последние 7 суток. Старые значения не затираются, поэтому на странице предмета видно, как менялась бета',
       ],
       terms: [
         {
           title: 'Бета (β)',
           description:
-            'Показывает, как сильно предмет реагирует на движение рынка. β = 1: предмет движется вместе с рынком. β = 1,5: когда рынок растёт на 10%, предмет растёт примерно на 15%. β около 0: предмет рынку почти не подчиняется. Пока данных мало, бета подтягивается к 1, чтобы короткая история не дала случайное число',
+            'Показывает, как сильно предмет реагирует на движение рынка. β = 1: предмет движется вместе с рынком. β = 1,5: когда рынок растёт на 10%, предмет растёт примерно на 15%. β около 0: предмет рынку почти не подчиняется. Пока данных мало, бета подтягивается к 1, чтобы короткая история не дала случайное число. Именно это значение используется в расчёте остатка',
+        },
+        {
+          title: 'Сырая бета',
+          description:
+            'Та же чувствительность к рынку, но до подтягивания к 1. Считается как медиана наклонов между всеми парами корзин окна (оценка Тейла–Сена), поэтому одиночный выброс её не сдвигает. В расчёт остатка она не идёт: при короткой истории она слишком шумная. Смотрите на неё как на проверку: чем сильнее она отличается от обычной беты, тем меньше наблюдений, а значит, тем меньше можно доверять обеим цифрам. Когда данных хватает, они почти совпадают',
         },
         {
           title: 'R²',
           description:
-            'Какая часть колебаний предмета объясняется движением рынка, от 0 до 1. Высокое значение: предмет следует за рынком, и его остаток небольшой. Значение около 0: предмет живёт сам по себе, и оценивать его нужно по собственному движению',
+            'Квадрат корреляции Пирсона между доходностью предмета и рынка, от 0 до 1. Показывает, какая доля колебаний предмета объясняется движением рынка. Высокое значение: предмет следует за рынком, и его остаток небольшой. Значение около 0: предмет живёт сам по себе, и оценивать его нужно по собственному движению',
         },
       ],
     },
@@ -241,18 +246,23 @@ export const metricsBlocks: Record<'ru' | 'en', MetricsBlock[]> = {
       id: 'beta',
       title: 'Beta and R²',
       paragraphs: [
-        'These two figures are calculated from the history of the item and are recalculated once a day from the data of the last 7 days. The old values are not overwritten, so the page of the item shows how the beta changed',
+        'These figures are calculated from the history of the item and are recalculated once a day from the data of the last 7 days. The old values are not overwritten, so the page of the item shows how the beta changed',
       ],
       terms: [
         {
           title: 'Beta (β)',
           description:
-            'Shows how strongly the item reacts to the movement of the market. β = 1: the item moves together with the market. β = 1.5: when the market rises by 10%, the item rises by about 15%. β close to 0: the item hardly follows the market. While there is little data, the beta is pulled towards 1 so that a short history does not give a random number',
+            'Shows how strongly the item reacts to the movement of the market. β = 1: the item moves together with the market. β = 1.5: when the market rises by 10%, the item rises by about 15%. β close to 0: the item hardly follows the market. While there is little data, the beta is pulled towards 1 so that a short history does not give a random number. This is the value used in the calculation of the residual',
+        },
+        {
+          title: 'Raw beta',
+          description:
+            'The same sensitivity to the market, but before the pull towards 1. It is the median of the slopes between all pairs of buckets in the window (the Theil–Sen estimate), so a single outlier does not move it. It does not enter the calculation of the residual: with a short history it is too noisy. Treat it as a check: the further it is from the ordinary beta, the fewer observations there are, and the less both figures can be trusted. When there is enough data, the two are nearly the same',
         },
         {
           title: 'R²',
           description:
-            'What part of the fluctuations of the item is explained by the movement of the market, from 0 to 1. A high value: the item follows the market and its residual is small. A value close to 0: the item lives on its own and has to be judged by its own movement',
+            'The squared Pearson correlation between the return of the item and of the market, from 0 to 1. It shows what part of the fluctuations of the item the movement of the market explains. A high value: the item follows the market and its residual is small. A value close to 0: the item lives on its own and has to be judged by its own movement',
         },
       ],
     },

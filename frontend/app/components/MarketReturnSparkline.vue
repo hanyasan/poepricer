@@ -13,7 +13,8 @@ const option = computed(() => ({
     confine: true,
     formatter: (params: Array<{ dataIndex: number }>) => {
       const point = props.points[params[0]!.dataIndex]!
-      return `${dateTimeFormatter().format(new Date(point.bucket))}<br/>${(point.value * 100).toFixed(2)}%`
+
+      return `${dateTimeFormatter().format(new Date(point.bucket))}<br/>${formatReturn(point.value)}`
     },
   },
   xAxis: { type: 'category', show: false, boundaryGap: false, data: props.points.map((point) => point.bucket) },
