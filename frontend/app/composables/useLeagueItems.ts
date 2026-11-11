@@ -76,13 +76,21 @@ export function useLeagueItems(slug: MaybeRefOrGetter<string>) {
     return Number.isInteger(value) && value >= 1 ? value : 1
   })
 
+  /**
+   * The sort as the request takes it. A new `sort` object would make the query of the
+   * request a new object too, and any navigation — the `?currency=` the currency switch
+   * writes, for one — would ask for the table again with the same parameters. A string
+   * keeps the query equal, so only a real change of a parameter sends a request.
+   */
+  const sortParam = computed(() => serializeSort(sort.value.field, sort.value.direction))
+
   const request = useFetch<ItemsPage>(() => `/api/leagues/${toValue(slug)}/items`, {
     query: computed(() => ({
       currency: currency.value ?? undefined,
       search: search.value,
       category: category.value,
       uncategorized: uncategorized.value ? 1 : undefined,
-      sort: serializeSort(sort.value.field, sort.value.direction),
+      sort: sortParam.value,
       page: page.value,
     })),
   })
