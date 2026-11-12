@@ -104,32 +104,34 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
             $metricsItem->exchange_item_id,
         );
 
-        $basketPrices = $this->pickBasket(
-            $this->pluckByItem($current, 'price'),
+        $basket = $this->pickBasket(
+            $current,
             array_flip($this->metricsRepository->getBasketItemIds($metricsItem->id, $previousStart)),
             $metricsItem->min_price,
         );
 
-        $returns = $this->calculateReturns($basketPrices, $this->pluckByItem($previous, 'price'));
-        $weights = $this->returnWeights($returns, $this->pluckByItem($current, 'units'), $this->pluckByItem($previous, 'units'));
+        $basket = $this->calculateReturns($basket, $previous);
+        $basket = $this->calculateWeights($basket);
+
+        /** @var array<int, array{price: float, units: float|null, volume: float|null, weight: float, return: float}> $reliableReturns */
         $reliableReturns = array_filter(
-            $returns,
-            static fn (float $return, int $itemId): bool => $weights[$itemId] > 0.0,
+            $basket,
+            static fn (array $item): bool => $item['weight'] > 0.0 && ! is_null($item['return']),
             ARRAY_FILTER_USE_BOTH,
         );
-        $marketReturn = $reliableReturns === []
-            ? null
-            : $this->statistics->weightedMedian($reliableReturns, $weights);
+        $marketReturn = empty($reliableReturns) ?
+            null :
+            $this->statistics->weightedMedian(
+                array_map(fn (array $item) => $item['return'], $reliableReturns),
+                array_map(fn (array $item) => $item['weight'], $reliableReturns),
+            );
 
         $this->metricsRepository->upsertItemMetrics(
             $this->buildItemMetricRows(
                 $metricsItem,
                 $bucketStart,
-                $basketPrices,
-                $returns,
+                $basket,
                 $marketReturn,
-                $this->pluckByItem($current, 'units'),
-                $weights,
             ),
         );
 
@@ -140,51 +142,67 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
                 'bucket_start' => $bucketStart->format(self::TIMESTAMP_FORMAT),
                 'market_return' => $marketReturn,
                 'basket_size' => count($reliableReturns),
-                'basket_total' => count($basketPrices),
+                'basket_total' => count($basket),
             ]);
         }
     }
 
     /**
      * An item stays in the basket while it was in the previous one, even when its
-     * price fell below the threshold. A new item enters only above the threshold.
+     * price fell below the threshold. A new item enters above the threshold or above
+     * the volume percentile, so heavily traded cheap items are not lost either.
      *
-     * @param  array<int, float>  $currentPrices
+     * @param  array<int, array{price: float, units: float|null, volume: float|null}>  $currentPrices
      * @param  array<int, int>  $previousBasket  item ids as keys
-     * @return array<int, float>
+     * @return array<int, array{price: float, units: float|null, volume: float|null}>
      */
     private function pickBasket(array $currentPrices, array $previousBasket, float $minPrice): array
     {
+        $volumes = array_filter(
+            array_column($currentPrices, 'volume'),
+            static fn (?float $volume): bool => ! is_null($volume),
+        );
+
+        // Without a single known volume there is nothing to rank, so only the price threshold applies.
+        $percentileVolume = $volumes === [] ? null : $this->statistics->percentile(
+            $volumes,
+            config('poe.metrics.basket_permission_volume_percentile'),
+        );
+
         return array_filter(
             $currentPrices,
-            static fn (float $price, int $itemId): bool => isset($previousBasket[$itemId]) || $price >= $minPrice,
+            static fn (array $itemData, int $itemId): bool => isset($previousBasket[$itemId]) ||
+                $itemData['price'] >= $minPrice ||
+                ($percentileVolume !== null && $itemData['volume'] !== null && $itemData['volume'] >= $percentileVolume),
             ARRAY_FILTER_USE_BOTH,
         );
     }
 
     /**
-     * @param  array<int, float>  $basketPrices
-     * @param  array<int, float>  $previousPrices
-     * @return array<int, float>
+     * A return needs the price of the same item in the previous bucket, otherwise it is absent.
+     *
+     * @param  array<int, array{price: float, units: float|null, volume: float|null}>  $basketPrices
+     * @param  array<int, array{price: float, units: float|null, volume: float|null}>  $previousPrices
+     * @return array<int, array{price: float, units: float|null, volume: float|null, return: ?float}>
      */
     private function calculateReturns(array $basketPrices, array $previousPrices): array
     {
-        $returns = [];
+        $basketResult = [];
 
-        foreach ($basketPrices as $itemId => $price) {
-            if (isset($previousPrices[$itemId])) {
-                $returns[$itemId] = log($price / $previousPrices[$itemId]);
-            }
+        foreach ($basketPrices as $itemId => $itemData) {
+            $return = isset($previousPrices[$itemId]['price']) ? log($itemData['price'] / $previousPrices[$itemId]['price']) : null;
+
+            $basketResult[$itemId] = [
+                ...$itemData,
+                'return' => $return,
+            ];
         }
 
-        return $returns;
+        return $basketResult;
     }
 
     /**
-     * @param  array<int, float>  $basketPrices
-     * @param  array<int, float>  $returns
-     * @param  array<int, float>  $units  items traded per hour in the bucket, only where known
-     * @param  array<int, float>  $weights  reliability weight of each return
+     * @param  array<int, array{price: float, units: float|null, volume: float|null, weight: float, return: ?float}>  $basket
      * @return array<int, array{
      *     exchange_item_id: int,
      *     exchange_metrics_item_id: int,
@@ -201,11 +219,8 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
     private function buildItemMetricRows(
         ExchangeMetricsItemDto $metricsItem,
         CarbonImmutable $bucketStart,
-        array $basketPrices,
-        array $returns,
+        array $basket,
         ?float $marketReturn,
-        array $units,
-        array $weights,
     ): array {
         $betas = $this->metricsRepository->getLatestBetas($metricsItem->id, $bucketStart);
         $history = $this->metricsRepository->getResidualHistory(
@@ -216,9 +231,9 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
         $minObservations = (int) config('poe.metrics.min_residual_observations');
         $rows = [];
 
-        foreach ($basketPrices as $itemId => $price) {
-            $logReturn = $returns[$itemId] ?? null;
-            $residual = ($logReturn !== null && $marketReturn !== null && $weights[$itemId] > 0.0)
+        foreach ($basket as $itemId => $itemData) {
+            $logReturn = $itemData['return'];
+            $residual = ($logReturn !== null && $marketReturn !== null && $itemData['weight'] > 0.0)
                 ? $logReturn - ($betas[$itemId] ?? 1.0) * $marketReturn
                 : null;
 
@@ -232,13 +247,13 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
                 'exchange_item_id' => $itemId,
                 'exchange_metrics_item_id' => $metricsItem->id,
                 'bucket_start' => $bucketStart->format(self::TIMESTAMP_FORMAT),
-                'price' => $price,
+                'price' => $itemData['price'],
                 'log_return' => $logReturn,
                 'residual' => $residual,
                 'residual_mad' => count($window) >= $minObservations ? $this->statistics->scaledMad($window) : null,
                 'observations' => count($window),
-                'units' => $units[$itemId] ?? null,
-                'return_weight' => $weights[$itemId] ?? null,
+                'units' => $itemData['units'],
+                'return_weight' => $itemData['weight'],
             ];
         }
 
@@ -303,8 +318,10 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
      * averaged, not summed, because every snapshot already reports a full hour of trades.
      * The units are absent when none of the snapshots knows the volume.
      *
-     * @param  array<int, list<array{price: float, units: float|null}>>  $samplesByItem
-     * @return array<int, array{price: float, units?: float}>
+     * @param  array<int, list<array{price: float, units: float|null, volume: float|null}>>  $samplesByItem
+     * @return array<int, array{price: float, units: float|null, volume: float|null}>
+     *
+     * @psalm-suppress InvalidReturnStatement,InvalidReturnType
      */
     private function summarizeBucket(array $samplesByItem, int $excludedItemId): array
     {
@@ -315,13 +332,15 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
                 continue;
             }
 
-            $summary[$itemId] = ['price' => $this->statistics->median(array_column($samples, 'price'))];
+            $summary[$itemId]['price'] = $this->statistics->median(array_column($samples, 'price'));
 
-            $knownUnits = array_filter(array_column($samples, 'units'), static fn (?float $units): bool => $units !== null);
+            /** @var array<int, list<array{price: float, units: float, volume: float}>> $knownUnitsSamples */
+            $knownUnitsSamples = array_filter($samples, static fn (array $sample): bool => ! is_null($sample['units']) && ! is_null($sample['volume']));
 
-            if ($knownUnits !== []) {
-                $summary[$itemId]['units'] = array_sum($knownUnits) / (float) count($knownUnits);
-            }
+            $summary[$itemId]['units'] = empty($knownUnitsSamples) ? null :
+                (float) array_sum(array_column($knownUnitsSamples, 'units')) / (float) count($knownUnitsSamples);
+            $summary[$itemId]['volume'] = empty($knownUnitsSamples) ? null :
+                $this->statistics->median(array_column($knownUnitsSamples, 'volume'));
         }
 
         return $summary;
@@ -345,25 +364,21 @@ final readonly class ExchangeMetricsService implements ExchangeMetricsServiceCon
     }
 
     /**
-     * A return is as reliable as the less traded of the two prices it is made of.
-     *
-     * @param  array<int, float>  $returns
-     * @param  array<int, float>  $currentUnits
-     * @param  array<int, float>  $previousUnits
-     * @return array<int, float>
+     * @param  array<int, array{price: float, units: float|null, volume: float|null, return: ?float}>  $basket
+     * @return array<int, array{price: float, units: float|null, volume: float|null, weight: float, return: ?float}>
      */
-    private function returnWeights(array $returns, array $currentUnits, array $previousUnits): array
+    private function calculateWeights(array $basket): array
     {
-        $weights = [];
+        $basketResult = [];
 
-        foreach (array_keys($returns) as $itemId) {
-            $weights[$itemId] = min(
-                $this->unitsWeight($currentUnits[$itemId] ?? null),
-                $this->unitsWeight($previousUnits[$itemId] ?? null),
-            );
+        foreach ($basket as $key => $item) {
+            $basketResult[$key] = [
+                ...$item,
+                'weight' => $this->unitsWeight($item['units']),
+            ];
         }
 
-        return $weights;
+        return $basketResult;
     }
 
     /**

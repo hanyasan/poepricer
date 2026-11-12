@@ -11,7 +11,7 @@ interface ExchangeBucketPriceRepositoryContract
      * trade id, grouped by item id, for the price checks created in [from, to). Each
      * sample carries the units traded per hour, null when the volume is unknown.
      *
-     * @return array<int, list<array{price: float, units: float|null}>>
+     * @return array<int, list<array{price: float, units: float|null, volume: float|null}>>
      */
     public function getPricesByItem(
         int $leagueId,

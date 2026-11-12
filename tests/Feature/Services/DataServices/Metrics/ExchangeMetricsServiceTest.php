@@ -128,7 +128,7 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
         $this->assertEqualsWithDelta(log(1.1) / 2.0, $market->market_return, 1e-12);
     }
 
-    public function test_the_return_weight_grows_with_the_less_traded_side_of_the_return(): void
+    public function test_the_return_weight_comes_from_the_units_of_the_current_bucket(): void
     {
         config(['poe.metrics.min_hourly_units' => 2.0, 'poe.metrics.full_weight_hourly_units' => 20.0]);
 
@@ -140,9 +140,9 @@ class ExchangeMetricsServiceTest extends FeatureTestCase
 
         $row = $this->itemMetrics('2030-01-01 12:00:00')[$this->itemA->id];
 
-        // the mean of 10 and 30 units is 20, the previous bucket has 10 units
+        // the mean of 10 and 30 units is 20, it gives the full weight even though the previous bucket has 10
         $this->assertSame(20.0, $row->units);
-        $this->assertSame(0.5, $row->return_weight);
+        $this->assertSame(1.0, $row->return_weight);
     }
 
     public function test_unknown_volume_keeps_the_full_weight_and_the_plain_market_median(): void

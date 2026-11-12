@@ -22,8 +22,8 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
         $inDivine = $this->prices($league->id, 'divine');
         $inExalted = $this->prices($league->id, 'exalted');
 
-        $this->assertSame([$item->id => [['price' => 0.5, 'units' => null]]], $inDivine);
-        $this->assertSame([$item->id => [['price' => 300.0, 'units' => null]]], $inExalted);
+        $this->assertSame([$item->id => [['price' => 0.5, 'units' => null, 'volume' => null]]], $inDivine);
+        $this->assertSame([$item->id => [['price' => 300.0, 'units' => null, 'volume' => null]]], $inExalted);
     }
 
     public function test_it_groups_the_prices_of_all_snapshots_by_item(): void
@@ -108,8 +108,14 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
             ['item-a' => 10.0],
         );
 
-        $this->assertSame([$item->id => [['price' => 0.5, 'units' => 20.0]]], $this->prices($league->id, 'divine'));
-        $this->assertSame([$item->id => [['price' => 300.0, 'units' => 20.0]]], $this->prices($league->id, 'exalted'));
+        $this->assertSame(
+            [$item->id => [['price' => 0.5, 'units' => 20.0, 'volume' => 10.0]]],
+            $this->prices($league->id, 'divine'),
+        );
+        $this->assertSame(
+            [$item->id => [['price' => 300.0, 'units' => 20.0, 'volume' => 6000.0]]],
+            $this->prices($league->id, 'exalted'),
+        );
     }
 
     public function test_latest_prices_come_from_the_newest_check_in_the_requested_currency(): void
@@ -146,7 +152,7 @@ class ExchangeBucketPriceRepositoryTest extends FeatureTestCase
     }
 
     /**
-     * @return array<int, list<array{price: float, units: float|null}>>
+     * @return array<int, list<array{price: float, units: float|null, volume: float|null}>>
      */
     private function prices(int $leagueId, string $currencyTradeId): array
     {

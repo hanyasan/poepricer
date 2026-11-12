@@ -26,7 +26,9 @@ return [
         'items_table_min_observations' => (int) env('ITEMS_TABLE_MIN_OBSERVATIONS', 6),
         // Share of the cheapest items a metrics currency leaves out of the basket: min_price is
         // this percentile of the item prices, so only the items above it pass.
-        'basket_min_price_percentile' => min(1.0, max(0.0, (float) env('METRICS_BASKET_MIN_PRICE_PERCENTILE', 0.6))),
+        'basket_min_price_percentile' => (float) env('METRICS_BASKET_MIN_PRICE_PERCENTILE', 0.6),
+        'basket_permission_volume_percentile' => (float) env('METRICS_BASKET_PERMISSION_VOLUME_PERCENTILE', 0.9),
+
     ],
     'overview' => [
         'top_limit' => (int) env('OVERVIEW_TOP_LIMIT', 10),
