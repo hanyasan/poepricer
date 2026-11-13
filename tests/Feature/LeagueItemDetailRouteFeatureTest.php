@@ -114,7 +114,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
             ->assertExactJson([
                 'item' => ['slug' => 'exalted', 'name' => 'Exalted Orb', 'category' => 'Currency'],
                 'currency' => 'divine',
-                'lastBucket' => '2030-01-10T12:00:00+00:00',
+                'lastBucket' => '2030-01-10T18:00:00+00:00',
                 'currentPrice' => null,
                 'currentPriceAt' => null,
                 'current' => [
@@ -161,7 +161,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
 
         $this->assertSame(['slug' => 'fragment', 'name' => 'FRAGMENT', 'category' => null], $json['item']);
         $this->assertSame('divine', $json['currency']);
-        $this->assertSame('2030-01-10T12:00:00+00:00', $json['lastBucket']);
+        $this->assertSame('2030-01-10T18:00:00+00:00', $json['lastBucket']);
         $this->assertNull($json['current']);
         $this->assertNull($json['beta']);
     }
@@ -293,7 +293,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->assertSame(2.5, $default->json('current.price'));
         $this->assertSame('mirror', $mirrorResponse->json('currency'));
         $this->assertSame(0.001, $mirrorResponse->json('current.price'));
-        $this->assertSame('2030-01-10T00:00:00+00:00', $mirrorResponse->json('lastBucket'));
+        $this->assertSame('2030-01-10T06:00:00+00:00', $mirrorResponse->json('lastBucket'));
     }
 
     public function test_summary_is_cached_until_a_league_tag_is_flushed(): void
@@ -387,8 +387,8 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                 'period' => '7d',
                 'lastBucket' => '2030-01-10T12:00:00+00:00',
                 'series' => [
-                    ['bucket' => '2030-01-10T00:00:00+00:00', 'price' => 2.4, 'residual' => null, 'residualMad' => null],
-                    ['bucket' => '2030-01-10T12:00:00+00:00', 'price' => 2.5, 'residual' => 0.003, 'residualMad' => 0.005],
+                    ['bucket' => '2030-01-10T06:00:00+00:00', 'price' => 2.4, 'residual' => null, 'residualMad' => null],
+                    ['bucket' => '2030-01-10T18:00:00+00:00', 'price' => 2.5, 'residual' => 0.003, 'residualMad' => 0.005],
                 ],
                 'betaHistory' => [
                     [
@@ -411,25 +411,25 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
             'default is a week' => [
                 null,
                 '7d',
-                ['2030-01-09 12:00:00', '2030-01-10 00:00:00', '2030-01-10 12:00:00'],
+                ['2030-01-09 18:00:00', '2030-01-10 06:00:00', '2030-01-10 18:00:00'],
                 ['2030-01-08 00:00:00', '2030-01-10 00:00:00'],
             ],
             'day is the last two buckets' => [
                 '24h',
                 '24h',
-                ['2030-01-10 00:00:00', '2030-01-10 12:00:00'],
+                ['2030-01-10 06:00:00', '2030-01-10 18:00:00'],
                 ['2030-01-10 00:00:00'],
             ],
             'week' => [
                 '7d',
                 '7d',
-                ['2030-01-09 12:00:00', '2030-01-10 00:00:00', '2030-01-10 12:00:00'],
+                ['2030-01-09 18:00:00', '2030-01-10 06:00:00', '2030-01-10 18:00:00'],
                 ['2030-01-08 00:00:00', '2030-01-10 00:00:00'],
             ],
             'league is everything' => [
                 'league',
                 'league',
-                ['2030-01-02 00:00:00', '2030-01-03 12:00:00', '2030-01-09 12:00:00', '2030-01-10 00:00:00', '2030-01-10 12:00:00'],
+                ['2030-01-02 06:00:00', '2030-01-03 18:00:00', '2030-01-09 18:00:00', '2030-01-10 06:00:00', '2030-01-10 18:00:00'],
                 ['2030-01-02 00:00:00', '2030-01-08 00:00:00', '2030-01-10 00:00:00'],
             ],
         ];
@@ -589,9 +589,11 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items/exalted/buckets")
             ->assertOk()
             ->assertExactJson([
+                'currency' => 'divine',
+                'period' => '7d',
                 'data' => [
                     [
-                        'bucket' => '2030-01-10T12:00:00+00:00',
+                        'bucket' => '2030-01-10T18:00:00+00:00',
                         'price' => 2.5,
                         'logReturn' => 0.0121,
                         'residual' => 0.0032,
@@ -601,7 +603,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                         'returnWeight' => 0.8,
                     ],
                     [
-                        'bucket' => '2030-01-10T00:00:00+00:00',
+                        'bucket' => '2030-01-10T06:00:00+00:00',
                         'price' => 2.4,
                         'logReturn' => null,
                         'residual' => null,
@@ -616,8 +618,6 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
                     'lastPage' => 1,
                     'perPage' => 28,
                     'total' => 2,
-                    'currency' => 'divine',
-                    'period' => '7d',
                 ],
             ]);
     }
@@ -636,14 +636,14 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $beyond = $this->getJson("/api/leagues/{$league->slug}/items/exalted/buckets?perPage=2&page=4")->assertOk()->json();
 
         $this->assertSame(
-            ['currentPage' => 1, 'lastPage' => 3, 'perPage' => 2, 'total' => 5, 'currency' => 'divine', 'period' => '7d'],
+            ['currentPage' => 1, 'lastPage' => 3, 'perPage' => 2, 'total' => 5],
             $first['meta'],
         );
         $this->assertSame(
-            ['2030-01-10T12:00:00+00:00', '2030-01-10T00:00:00+00:00'],
+            ['2030-01-10T18:00:00+00:00', '2030-01-10T06:00:00+00:00'],
             array_column($first['data'], 'bucket'),
         );
-        $this->assertSame(['2030-01-08T12:00:00+00:00'], array_column($last['data'], 'bucket'));
+        $this->assertSame(['2030-01-08T18:00:00+00:00'], array_column($last['data'], 'bucket'));
         $this->assertSame([], $beyond['data']);
         $this->assertSame(5, $beyond['meta']['total']);
     }
@@ -662,7 +662,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->assertSame(2, $this->getJson("{$base}?period=24h")->json('meta.total'));
         $this->assertSame(3, $this->getJson("{$base}?period=7d")->json('meta.total'));
         $this->assertSame(5, $this->getJson("{$base}?period=league")->json('meta.total'));
-        $this->assertSame('league', $this->getJson("{$base}?period=league")->json('meta.period'));
+        $this->assertSame('league', $this->getJson("{$base}?period=league")->json('period'));
     }
 
     public function test_buckets_only_have_the_requested_item(): void
@@ -687,14 +687,14 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items/fragment/buckets")
             ->assertOk()
             ->assertExactJson([
+                'currency' => 'divine',
+                'period' => '7d',
                 'data' => [],
                 'meta' => [
                     'currentPage' => 1,
                     'lastPage' => 1,
                     'perPage' => 28,
                     'total' => 0,
-                    'currency' => 'divine',
-                    'period' => '7d',
                 ],
             ]);
     }
@@ -707,7 +707,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items/exalted/buckets")
             ->assertOk()
             ->assertJsonPath('data', [])
-            ->assertJsonPath('meta.currency', null)
+            ->assertJsonPath('currency', null)
             ->assertJsonPath('meta.total', 0)
             ->assertJsonPath('meta.lastPage', 1);
     }
@@ -721,7 +721,7 @@ class LeagueItemDetailRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items/exalted/buckets")
             ->assertOk()
             ->assertJsonPath('data', [])
-            ->assertJsonPath('meta.currency', 'divine');
+            ->assertJsonPath('currency', 'divine');
     }
 
     /**

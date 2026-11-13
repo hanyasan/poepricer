@@ -5,12 +5,15 @@ namespace App\Http\Controllers\League;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LeagueItemsRequest;
 use App\Http\Requests\LeagueOverviewRequest;
-use App\Http\Resources\LeagueCurrencyResource;
-use App\Http\Resources\LeagueItemCategoriesResource;
-use App\Http\Resources\LeagueItemsPageResource;
-use App\Http\Resources\LeagueOverviewResource;
-use App\Http\Resources\MainPageLeagueResource;
+use App\Http\Requests\MarketDistributionRequest;
+use App\Http\Resources\League\ItemsPage\LeagueItemsPageResource;
+use App\Http\Resources\League\LeagueCurrencyResource;
+use App\Http\Resources\League\LeagueItemCategoriesResource;
+use App\Http\Resources\League\LeagueOverview\LeagueOverviewResource;
+use App\Http\Resources\League\MainPage\MainPageLeagueResource;
+use App\Http\Resources\League\MarketDistribution\MarketDistributionResource;
 use App\Services\DataServices\Metrics\LeagueItemsServiceContract;
+use App\Services\DataServices\Metrics\LeagueMarketServiceContract;
 use App\Services\DataServices\Metrics\LeagueOverviewServiceContract;
 use App\Services\DataServices\Poe\PoeLeagueServiceContract;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +23,7 @@ final class LeagueController extends Controller
     public function index(
         PoeLeagueServiceContract $poeLeagueService,
     ): JsonResponse {
-        return \response()->json(
+        return response()->json(
             MainPageLeagueResource::collection(
                 $poeLeagueService->mainPageLeagues()
             )
@@ -31,7 +34,7 @@ final class LeagueController extends Controller
         string $leagueSlug,
         LeagueOverviewServiceContract $leagueOverviewService,
     ): JsonResponse {
-        return \response()->json(
+        return response()->json(
             LeagueCurrencyResource::collection(
                 $leagueOverviewService->currencies($leagueSlug)
             )
@@ -43,8 +46,8 @@ final class LeagueController extends Controller
         LeagueOverviewRequest $request,
         LeagueOverviewServiceContract $leagueOverviewService,
     ): JsonResponse {
-        return \response()->json(
-            new LeagueOverviewResource(
+        return response()->json(
+            LeagueOverviewResource::make(
                 $leagueOverviewService->overview($leagueSlug, $request->currency(), $request->period())
             )
         );
@@ -54,8 +57,8 @@ final class LeagueController extends Controller
         string $leagueSlug,
         LeagueItemsServiceContract $leagueItemsService,
     ): JsonResponse {
-        return \response()->json(
-            new LeagueItemCategoriesResource($leagueItemsService->categories($leagueSlug))
+        return response()->json(
+            LeagueItemCategoriesResource::make($leagueItemsService->categories($leagueSlug))
         );
     }
 
@@ -64,10 +67,25 @@ final class LeagueController extends Controller
         LeagueItemsRequest $request,
         LeagueItemsServiceContract $leagueItemsService,
     ): JsonResponse {
-        return \response()->json(
-            new LeagueItemsPageResource(
+        return response()->json(
+            LeagueItemsPageResource::make(
                 $leagueItemsService->items($leagueSlug, $request->filter(), $request->sort(), $request->pagination())
             )
+        );
+    }
+
+    public function distribution(
+        string $leagueSlug,
+        MarketDistributionRequest $request,
+        LeagueMarketServiceContract $leagueMarketService,
+    ): JsonResponse {
+        return response()->json(
+            MarketDistributionResource::make($leagueMarketService->distribution(
+                $leagueSlug,
+                $request->currency(),
+                $request->bucket(),
+                $request->includesThinlyTraded(),
+            ))
         );
     }
 }

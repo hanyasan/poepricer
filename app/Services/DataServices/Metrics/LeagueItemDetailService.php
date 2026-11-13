@@ -11,6 +11,7 @@ use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemDetailQueryDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemHistoryDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemInfoDto;
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemSummaryDto;
+use App\DataTransferObjects\ServiceObjects\PaginatedMetaDto;
 use App\DataTransferObjects\ServiceObjects\PaginationDto;
 use App\Enums\CacheTtlEnum;
 use App\Enums\MetricPeriodEnum;
@@ -126,10 +127,12 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
 
         return new ItemBucketsPageDto(
             items: $page->items,
-            total: $page->total,
-            currentPage: $pagination->page,
-            lastPage: max(1, (int) ceil($page->total / $pagination->perPage)),
-            perPage: $pagination->perPage,
+            meta: new PaginatedMetaDto(
+                $page->total,
+                $pagination->page,
+                max(1, (int) ceil($page->total / $pagination->perPage)),
+                $pagination->perPage,
+            ),
             currency: $currency,
             period: $query->period,
         );
@@ -218,10 +221,12 @@ final readonly class LeagueItemDetailService implements LeagueItemDetailServiceC
     {
         return new ItemBucketsPageDto(
             items: [],
-            total: 0,
-            currentPage: $pagination->page,
-            lastPage: 1,
-            perPage: $pagination->perPage,
+            meta: new PaginatedMetaDto(
+                0,
+                $pagination->page,
+                1,
+                $pagination->perPage,
+            ),
             currency: $currency,
             period: $query->period,
         );

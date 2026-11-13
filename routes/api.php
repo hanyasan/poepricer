@@ -2,18 +2,26 @@
 
 use App\Http\Controllers\League\LeagueController;
 use App\Http\Controllers\League\LeagueItemController;
-use App\Http\Controllers\League\LeagueMarketController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'leagues'], function () {
     Route::get('/', [LeagueController::class, 'index']);
-    Route::get('{leagueSlug}/currencies', [LeagueController::class, 'currencies']);
-    Route::get('{leagueSlug}/overview', [LeagueController::class, 'overview']);
-    Route::get('{leagueSlug}/market/distribution', [LeagueMarketController::class, 'distribution']);
-    Route::get('{leagueSlug}/items/categories', [LeagueController::class, 'itemCategories']);
-    Route::get('{leagueSlug}/items', [LeagueController::class, 'items']);
-    Route::get('{leagueSlug}/items/{itemSlug}/summary', [LeagueItemController::class, 'summary']);
-    Route::get('{leagueSlug}/items/{itemSlug}/history', [LeagueItemController::class, 'history']);
-    Route::get('{leagueSlug}/items/{itemSlug}/prices', [LeagueItemController::class, 'prices']);
-    Route::get('{leagueSlug}/items/{itemSlug}/buckets', [LeagueItemController::class, 'buckets']);
+
+    Route::group(['prefix' => '{leagueSlug}'], function () {
+        Route::get('/currencies', [LeagueController::class, 'currencies']);
+        Route::get('/overview', [LeagueController::class, 'overview']);
+        Route::get('/market/distribution', [LeagueController::class, 'distribution']);
+
+        Route::group(['prefix' => 'items'], function () {
+            Route::get('/', [LeagueController::class, 'items']);
+            Route::get('/categories', [LeagueController::class, 'itemCategories']);
+
+            Route::group(['prefix' => '{itemSlug}'], function () {
+                Route::get('/summary', [LeagueItemController::class, 'summary']);
+                Route::get('/history', [LeagueItemController::class, 'history']);
+                Route::get('/prices', [LeagueItemController::class, 'prices']);
+                Route::get('/buckets', [LeagueItemController::class, 'buckets']);
+            });
+        });
+    });
 });

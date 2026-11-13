@@ -78,15 +78,15 @@ class LeagueOverviewRouteFeatureTest extends FeatureTestCase
         );
         $this->assertSame('divine', $json['currency']);
         $this->assertSame('7d', $json['period']);
-        $this->assertSame('2030-01-10T12:00:00+00:00', $json['lastBucket']);
+        $this->assertSame('2030-01-10T18:00:00+00:00', $json['lastBucket']);
         $this->assertSame(
             ['marketReturnLastBucket' => -0.0048, 'marketReturn7d' => 0.0052, 'basketSize' => 42, 'basketTotal' => 42, 'lastSnapshotAt' => '2030-01-10T12:10:00+00:00'],
             [...$json['kpi'], 'marketReturn7d' => round($json['kpi']['marketReturn7d'], 6)],
         );
         $this->assertSame(
             [
-                ['bucket' => '2030-01-10T00:00:00+00:00', 'value' => 0.01],
-                ['bucket' => '2030-01-10T12:00:00+00:00', 'value' => -0.0048],
+                ['bucket' => '2030-01-10T06:00:00+00:00', 'value' => 0.01],
+                ['bucket' => '2030-01-10T18:00:00+00:00', 'value' => -0.0048],
             ],
             $json['marketReturnSeries'],
         );

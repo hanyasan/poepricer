@@ -60,8 +60,8 @@ class LeagueRouteFeatureTest extends FeatureTestCase
 
         $this->assertSame(
             [
-                ['bucket' => '2030-01-01T00:00:00+00:00', 'value' => 0.0132],
-                ['bucket' => '2030-01-02T00:00:00+00:00', 'value' => -0.0048],
+                ['bucket' => '2030-01-01T06:00:00+00:00', 'value' => 0.0132],
+                ['bucket' => '2030-01-02T06:00:00+00:00', 'value' => -0.0048],
             ],
             $row['marketReturnSeries'],
         );

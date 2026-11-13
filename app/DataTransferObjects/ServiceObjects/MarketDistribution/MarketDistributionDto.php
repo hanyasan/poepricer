@@ -7,7 +7,7 @@ final readonly class MarketDistributionDto
     /**
      * @param  string[]  $buckets  starts of the latest buckets, newest first
      * @param  MarketBinDto[]  $bins
-     * @param  MarketCategoryDto[]  $byCategory
+     * @param  MarketDistributionCategoryDto[]  $byCategory
      * @param  MarketItemDto[]  $items
      */
     public function __construct(

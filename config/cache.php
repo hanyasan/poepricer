@@ -26,9 +26,10 @@ use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueOverviewDto;
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueUnusualMoveDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBinDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBreadthDto;
-use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketCategoryDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionCategoryDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketItemDto;
+use App\DataTransferObjects\ServiceObjects\PaginatedMetaDto;
 use App\Enums\ItemPriceWindowEnum;
 use App\Enums\MetricPeriodEnum;
 use Illuminate\Support\Str;
@@ -181,7 +182,7 @@ return [
         MarketDistributionDto::class,
         MarketBreadthDto::class,
         MarketBinDto::class,
-        MarketCategoryDto::class,
+        MarketDistributionCategoryDto::class,
         MarketItemDto::class,
         ItemSummaryDto::class,
         ItemInfoDto::class,
@@ -194,6 +195,7 @@ return [
         ItemPriceCurrencyRowDto::class,
         ItemPriceSnapshotRowDto::class,
         ItemPriceWindowEnum::class,
+        PaginatedMetaDto::class,
     ],
 
 ];

@@ -10,6 +10,7 @@ use App\DataTransferObjects\ServiceObjects\LeagueItems\ItemsSortDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemRowDto;
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemsPageDto;
+use App\DataTransferObjects\ServiceObjects\PaginatedMetaDto;
 use App\DataTransferObjects\ServiceObjects\PaginationDto;
 use App\Enums\CacheTtlEnum;
 use App\Enums\ItemsSortFieldEnum;
@@ -143,10 +144,12 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
                 fn (ItemTableRowDto $row): LeagueItemRowDto => $this->row($row, $sparklines[$row->id] ?? []),
                 $page->items,
             ),
-            total: $page->total,
-            currentPage: $pagination->page,
-            lastPage: $this->lastPage($page->total, $pagination),
-            perPage: $pagination->perPage,
+            meta: new PaginatedMetaDto(
+                $page->total,
+                $pagination->page,
+                $this->lastPage($page->total, $pagination),
+                $pagination->perPage,
+            ),
             currency: $currency,
             lastBucket: $latest->bucket_start,
             lastSnapshotAt: $this->priceCheckRepository->findLatestCreatedAtByLeague($leagueId),
@@ -187,10 +190,12 @@ final readonly class LeagueItemsService implements LeagueItemsServiceContract
     {
         return new LeagueItemsPageDto(
             items: [],
-            total: 0,
-            currentPage: $pagination->page,
-            lastPage: 1,
-            perPage: $pagination->perPage,
+            meta: new PaginatedMetaDto(
+                0,
+                $pagination->page,
+                1,
+                $pagination->perPage,
+            ),
             currency: $currency,
             lastBucket: null,
         );

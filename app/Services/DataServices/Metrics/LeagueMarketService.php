@@ -6,7 +6,7 @@ use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeItemMetri
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMetricsItemDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketBreadthDto;
-use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketCategoryDto;
+use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionCategoryDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketDistributionDto;
 use App\DataTransferObjects\ServiceObjects\MarketDistribution\MarketItemDto;
 use App\Enums\CacheTtlEnum;
@@ -166,7 +166,7 @@ final readonly class LeagueMarketService implements LeagueMarketServiceContract
      * Median return of every category, the best one first, items without a category last among equals.
      *
      * @param  MarketItemDto[]  $items
-     * @return MarketCategoryDto[]
+     * @return MarketDistributionCategoryDto[]
      */
     private function categories(array $items): array
     {
@@ -179,7 +179,7 @@ final readonly class LeagueMarketService implements LeagueMarketServiceContract
         }
 
         $categories = array_values(array_map(
-            fn (array $group): MarketCategoryDto => new MarketCategoryDto(
+            fn (array $group): MarketDistributionCategoryDto => new MarketDistributionCategoryDto(
                 $group['category'],
                 $this->statistics->median($group['returns']),
                 count($group['returns']),
@@ -189,7 +189,7 @@ final readonly class LeagueMarketService implements LeagueMarketServiceContract
 
         usort(
             $categories,
-            static fn (MarketCategoryDto $a, MarketCategoryDto $b): int => [$b->median, $a->category === null, $a->category]
+            static fn (MarketDistributionCategoryDto $a, MarketDistributionCategoryDto $b): int => [$b->median, $a->category === null, $a->category]
                 <=> [$a->median, $b->category === null, $b->category],
         );
 

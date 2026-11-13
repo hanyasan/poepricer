@@ -2,7 +2,7 @@
 
 namespace App\DataTransferObjects\ServiceObjects\MarketDistribution;
 
-final readonly class MarketCategoryDto
+final readonly class MarketDistributionCategoryDto
 {
     public function __construct(
         public ?string $category,

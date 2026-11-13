@@ -29,7 +29,9 @@ useSeoMeta({
 const slug = computed(() => route.params.league as string)
 
 // useFetch makes the server wait for the response before it renders the page.
-const { data: items, status, error, refresh, search, category, uncategorized, sort, page, setSearch, setCategory, setSort, setPage } =
+const {
+    data: items,
+    status, error, refresh, search, category, uncategorized, sort, page, setSearch, setCategory, setSort, setPage } =
   useLeagueItems(slug)
 const { data: categories } = useItemCategories(slug)
 
@@ -153,9 +155,9 @@ const emptyText = computed(() => {
         <USkeleton v-for="index in 10" :key="index" class="h-12" />
       </div>
 
-      <p v-else-if="items.meta.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
+      <p v-else-if="items.currency === null" class="text-muted">{{ $t('common.currenciesNotConfigured') }}</p>
 
-      <p v-else-if="items.meta.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
+      <p v-else-if="items.lastBucket === null" class="text-muted">{{ $t('common.metricsNotCalculated') }}</p>
 
       <template v-else>
         <div class="flex flex-wrap items-center gap-3">
@@ -180,9 +182,9 @@ const emptyText = computed(() => {
 
         <p class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
           {{ $t('items.found', { total: items.meta.total }) }}
-          <template v-if="items.meta.lastSnapshotAt">
+          <template v-if="items.lastSnapshotAt">
             <span>·</span>
-            <span>{{ $t('common.updated') }} <LocalDateTime :value="items.meta.lastSnapshotAt" /></span>
+            <span>{{ $t('common.updated') }} <LocalDateTime :value="items.lastSnapshotAt" /></span>
           </template>
           <UTooltip :content="{ side: 'right' }" :ui="{ content: 'h-auto items-start px-3 py-2 shadow-lg' }">
             <NuxtLink :to="localePath('/about/metrics')" :aria-label="$t('items.help.label')" class="inline-flex hover:text-primary">

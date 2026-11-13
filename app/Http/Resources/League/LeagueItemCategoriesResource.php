@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\League;
 
 use App\DataTransferObjects\ServiceObjects\LeagueItems\LeagueItemCategoriesDto;
+use App\Http\Resources\BaseResource;
 
 final class LeagueItemCategoriesResource extends BaseResource
 {

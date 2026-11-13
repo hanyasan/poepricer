@@ -2,6 +2,8 @@
 
 namespace App\DataTransferObjects\ServiceObjects\LeagueItems;
 
+use App\DataTransferObjects\ServiceObjects\PaginatedMetaDto;
+
 final readonly class LeagueItemsPageDto
 {
     /**
@@ -9,10 +11,7 @@ final readonly class LeagueItemsPageDto
      */
     public function __construct(
         public array $items,
-        public int $total,
-        public int $currentPage,
-        public int $lastPage,
-        public int $perPage,
+        public PaginatedMetaDto $meta,
         public ?string $currency,
         public ?string $lastBucket,
         public ?string $lastSnapshotAt = null,

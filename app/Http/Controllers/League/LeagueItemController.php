@@ -7,10 +7,10 @@ use App\Http\Requests\ItemBucketsRequest;
 use App\Http\Requests\ItemHistoryRequest;
 use App\Http\Requests\ItemPricesRequest;
 use App\Http\Requests\ItemSummaryRequest;
-use App\Http\Resources\ItemBucketsPageResource;
-use App\Http\Resources\ItemHistoryResource;
-use App\Http\Resources\ItemPricesResource;
-use App\Http\Resources\ItemSummaryResource;
+use App\Http\Resources\League\LeagueItem\ItemBucketsPageResource;
+use App\Http\Resources\League\LeagueItem\ItemHistoryResource;
+use App\Http\Resources\League\LeagueItem\ItemPricesResource;
+use App\Http\Resources\League\LeagueItem\ItemSummaryResource;
 use App\Services\DataServices\Metrics\LeagueItemDetailServiceContract;
 use App\Services\DataServices\Prices\LeagueItemPricesServiceContract;
 use Illuminate\Http\JsonResponse;
@@ -23,8 +23,8 @@ final class LeagueItemController extends Controller
         ItemSummaryRequest $request,
         LeagueItemDetailServiceContract $itemDetailService,
     ): JsonResponse {
-        return \response()->json(
-            new ItemSummaryResource($itemDetailService->summary($leagueSlug, $itemSlug, $request->currency()))
+        return response()->json(
+            ItemSummaryResource::make($itemDetailService->summary($leagueSlug, $itemSlug, $request->currency()))
         );
     }
 
@@ -34,8 +34,8 @@ final class LeagueItemController extends Controller
         ItemHistoryRequest $request,
         LeagueItemDetailServiceContract $itemDetailService,
     ): JsonResponse {
-        return \response()->json(
-            new ItemHistoryResource($itemDetailService->history($leagueSlug, $itemSlug, $request->detailQuery()))
+        return response()->json(
+            ItemHistoryResource::make($itemDetailService->history($leagueSlug, $itemSlug, $request->detailQuery()))
         );
     }
 
@@ -45,8 +45,8 @@ final class LeagueItemController extends Controller
         ItemPricesRequest $request,
         LeagueItemPricesServiceContract $itemPricesService,
     ): JsonResponse {
-        return \response()->json(
-            new ItemPricesResource($itemPricesService->prices($leagueSlug, $itemSlug, $request->pricesQuery()))
+        return response()->json(
+            ItemPricesResource::make($itemPricesService->prices($leagueSlug, $itemSlug, $request->pricesQuery()))
         );
     }
 
@@ -56,8 +56,8 @@ final class LeagueItemController extends Controller
         ItemBucketsRequest $request,
         LeagueItemDetailServiceContract $itemDetailService,
     ): JsonResponse {
-        return \response()->json(
-            new ItemBucketsPageResource(
+        return response()->json(
+            ItemBucketsPageResource::make(
                 $itemDetailService->buckets($leagueSlug, $itemSlug, $request->detailQuery(), $request->pagination())
             )
         );

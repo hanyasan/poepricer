@@ -44,15 +44,15 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $this->getJson("/api/leagues/{$league->slug}/items")
             ->assertOk()
             ->assertExactJson([
+                'currency' => null,
+                'lastBucket' => null,
+                'lastSnapshotAt' => null,
                 'data' => [],
                 'meta' => [
                     'currentPage' => 1,
                     'lastPage' => 1,
                     'perPage' => 50,
                     'total' => 0,
-                    'currency' => null,
-                    'lastBucket' => null,
-                    'lastSnapshotAt' => null,
                 ],
             ]);
     }
@@ -65,8 +65,8 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $json = $this->getJson("/api/leagues/{$league->slug}/items")->assertOk()->json();
 
         $this->assertSame([], $json['data']);
-        $this->assertSame('divine', $json['meta']['currency']);
-        $this->assertNull($json['meta']['lastBucket']);
+        $this->assertSame('divine', $json['currency']);
+        $this->assertNull($json['lastBucket']);
         $this->assertSame(0, $json['meta']['total']);
     }
 
@@ -88,9 +88,12 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
 
         $json = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency")->assertOk()->json();
 
-        $this->assertSame(['data', 'meta'], array_keys($json));
+        $this->assertSame(['currency', 'lastBucket', 'lastSnapshotAt', 'data', 'meta'], array_keys($json));
+        $this->assertSame('divine', $json['currency']);
+        $this->assertSame('2030-01-10T12:00:00+00:00', $json['lastBucket']);
+        $this->assertNull($json['lastSnapshotAt']);
         $this->assertSame(
-            ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 1, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00', 'lastSnapshotAt' => null],
+            ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 1],
             $json['meta'],
         );
         $this->assertSame(
@@ -109,8 +112,8 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
                 'lowData' => false,
                 'isUnusual' => false,
                 'sparkline' => [
-                    ['bucket' => '2030-01-09T00:00:00+00:00', 'value' => 2.4],
-                    ['bucket' => '2030-01-10T12:00:00+00:00', 'value' => 2.5],
+                    ['bucket' => '2030-01-09T06:00:00+00:00', 'value' => 2.4],
+                    ['bucket' => '2030-01-10T18:00:00+00:00', 'value' => 2.5],
                 ],
             ],
             $json['data'][0],
@@ -127,7 +130,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $json = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency")->assertOk()->json();
 
         $this->assertSame(7.5, $json['data'][0]['price']);
-        $this->assertSame('2030-01-10T14:00:00+00:00', $json['meta']['lastSnapshotAt']);
+        $this->assertSame('2030-01-10T14:00:00+00:00', $json['lastSnapshotAt']);
     }
 
     public function test_an_item_missing_from_the_latest_snapshot_keeps_the_bucket_price(): void
@@ -375,9 +378,12 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
 
         $this->assertSame(['c', 'd'], $this->slugs($second['data']));
         $this->assertSame(
-            ['currentPage' => 2, 'lastPage' => 3, 'perPage' => 2, 'total' => 5, 'currency' => 'divine', 'lastBucket' => '2030-01-10T12:00:00+00:00', 'lastSnapshotAt' => null],
+            ['currentPage' => 2, 'lastPage' => 3, 'perPage' => 2, 'total' => 5],
             $second['meta'],
         );
+        $this->assertSame('divine', $second['currency']);
+        $this->assertSame('2030-01-10T12:00:00+00:00', $second['lastBucket']);
+        $this->assertNull($second['lastSnapshotAt']);
         $this->assertSame(['e'], $this->slugs($last['data']));
         $this->assertSame([], $beyond['data']);
         $this->assertSame(5, $beyond['meta']['total']);
@@ -406,11 +412,11 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $default = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency")->json();
         $chaos = $this->getJson("/api/leagues/{$league->slug}/items?category=Currency&currency=chaos")->json();
 
-        $this->assertSame('divine', $default['meta']['currency']);
+        $this->assertSame('divine', $default['currency']);
         $this->assertSame(2.5, $default['data'][0]['price']);
-        $this->assertSame('chaos', $chaos['meta']['currency']);
+        $this->assertSame('chaos', $chaos['currency']);
         $this->assertSame(200.5, $chaos['data'][0]['price']);
-        $this->assertSame('2030-01-10T00:00:00+00:00', $chaos['meta']['lastBucket']);
+        $this->assertSame('2030-01-10T00:00:00+00:00', $chaos['lastBucket']);
     }
 
     public function test_unknown_currency_is_rejected(): void
@@ -534,7 +540,7 @@ class LeagueItemsRouteFeatureTest extends FeatureTestCase
         $this->assertSame($first, $second);
         $this->assertSame('priced', $second['slug']);
         $this->assertSame(2.5, $second['price']);
-        $this->assertSame([['bucket' => '2030-01-10T12:00:00+00:00', 'value' => 2.5]], $second['sparkline']);
+        $this->assertSame([['bucket' => '2030-01-10T18:00:00+00:00', 'value' => 2.5]], $second['sparkline']);
     }
 
     public function test_categories_are_distinct_sorted_and_skip_empty_values(): void

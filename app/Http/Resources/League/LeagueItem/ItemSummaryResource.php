@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\League\LeagueItem;
 
 use App\DataTransferObjects\ServiceObjects\ItemDetail\ItemSummaryDto;
+use App\Http\Resources\BaseResource;
 
 final class ItemSummaryResource extends BaseResource
 {
@@ -20,7 +21,7 @@ final class ItemSummaryResource extends BaseResource
                 'category' => $summary->item->category,
             ],
             'currency' => $summary->currency,
-            'lastBucket' => self::toDefaultResponseDatetime($summary->lastBucket),
+            'lastBucket' => self::toDefaultResponseDatetimeBucket($summary->lastBucket),
             'currentPrice' => $summary->currentPrice,
             'currentPriceAt' => self::toDefaultResponseDatetime($summary->currentPriceAt),
             'current' => $current === null ? null : [
@@ -34,7 +35,7 @@ final class ItemSummaryResource extends BaseResource
                 'lowData' => $current->lowData,
                 'isUnusual' => $current->isUnusual,
             ],
-            'beta' => $summary->beta === null ? null : ItemHistoryResource::beta($summary->beta),
+            'beta' => $summary->beta === null ? null : ExchangeItemBetaResource::make($summary->beta),
         ];
     }
 }

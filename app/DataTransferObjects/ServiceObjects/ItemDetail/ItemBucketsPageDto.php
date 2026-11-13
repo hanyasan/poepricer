@@ -3,6 +3,7 @@
 namespace App\DataTransferObjects\ServiceObjects\ItemDetail;
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ItemMetricRowDto;
+use App\DataTransferObjects\ServiceObjects\PaginatedMetaDto;
 use App\Enums\MetricPeriodEnum;
 
 final readonly class ItemBucketsPageDto
@@ -12,10 +13,7 @@ final readonly class ItemBucketsPageDto
      */
     public function __construct(
         public array $items,
-        public int $total,
-        public int $currentPage,
-        public int $lastPage,
-        public int $perPage,
+        public PaginatedMetaDto $meta,
         public ?string $currency,
         public MetricPeriodEnum $period,
     ) {}

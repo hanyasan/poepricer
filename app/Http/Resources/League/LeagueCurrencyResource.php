@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\League;
 
 use App\DataTransferObjects\ServiceObjects\LeagueOverview\LeagueCurrencyDto;
 use Illuminate\Http\Resources\Json\JsonResource;

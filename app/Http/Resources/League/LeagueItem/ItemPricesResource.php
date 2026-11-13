@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\League\LeagueItem;
 
 use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceCurrencyRowDto;
-use App\DataTransferObjects\RepositoryObjects\Exchange\PriceCheck\ItemPriceSnapshotRowDto;
 use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPriceChangeDto;
 use App\DataTransferObjects\ServiceObjects\ItemPrices\ItemPricesDto;
+use App\Http\Resources\BaseResource;
 
 final class ItemPricesResource extends BaseResource
 {
@@ -25,9 +25,9 @@ final class ItemPricesResource extends BaseResource
                 'name' => $currency->name,
                 'points' => $currency->points,
             ], $prices->currencies),
-            'points' => array_map(self::point(...), $prices->points),
+            'points' => ExchangeItemPriceSnapshotResource::collection($prices->points),
             'stats' => $prices->stats === null ? null : [
-                'current' => self::point($prices->stats->current),
+                'current' => ExchangeItemPriceSnapshotResource::make($prices->stats->current),
                 'min' => $prices->stats->min,
                 'max' => $prices->stats->max,
                 'median' => $prices->stats->median,
@@ -37,18 +37,6 @@ final class ItemPricesResource extends BaseResource
                     'change' => $change->change,
                 ], $prices->stats->changes),
             ],
-        ];
-    }
-
-    /**
-     * @return array{at: string, price: float, units: float}
-     */
-    private static function point(ItemPriceSnapshotRowDto $point): array
-    {
-        return [
-            'at' => self::toDefaultResponseDatetime($point->at),
-            'price' => $point->price,
-            'units' => $point->units,
         ];
     }
 }

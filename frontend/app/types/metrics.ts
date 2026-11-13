@@ -46,18 +46,15 @@ export interface PaginatedMeta {
   total: number
 }
 
-export interface ItemsPageMeta extends PaginatedMeta {
+export interface ItemsPage {
   /** Currency the page is measured in; `null` when the league has no metric currencies. */
   currency: string | null
   /** Start of the bucket the metrics are taken from; `null` when none is calculated yet. */
   lastBucket: string | null
   /** Moment of the snapshot the freshest prices come from; `null` when the league has none. */
   lastSnapshotAt: string | null
-}
-
-export interface ItemsPage {
   data: ItemMetricRow[]
-  meta: ItemsPageMeta
+  meta: PaginatedMeta
 }
 
 export interface ItemCategories {
@@ -231,14 +228,11 @@ export interface ItemBucketRow {
   returnWeight: number | null
 }
 
-export interface ItemBucketsMeta extends PaginatedMeta {
+export interface ItemBucketsPage {
   currency: string | null
   period: MetricPeriod
-}
-
-export interface ItemBucketsPage {
   data: ItemBucketRow[]
-  meta: ItemBucketsMeta
+  meta: PaginatedMeta
 }
 
 /** Window of the price series of an item, counted back from the last price check of the league. */

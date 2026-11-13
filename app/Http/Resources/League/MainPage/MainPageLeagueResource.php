@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\League\MainPage;
 
-use App\DataTransferObjects\RepositoryObjects\Exchange\Metrics\ExchangeMarketMetricDto;
 use App\DataTransferObjects\RepositoryObjects\League\MainPoeLeagueDto;
+use App\Http\Resources\BaseResource;
 
 final class MainPageLeagueResource extends BaseResource
 {
@@ -27,10 +27,7 @@ final class MainPageLeagueResource extends BaseResource
             'basketTotal' => $mainLeague->exchange_market_metrics === []
                 ? 0
                 : $mainLeague->exchange_market_metrics[array_key_last($mainLeague->exchange_market_metrics)]->basket_total,
-            'marketReturnSeries' => array_map(static fn (ExchangeMarketMetricDto $metric) => [
-                'bucket' => self::toDefaultResponseDatetime($metric->bucket_start),
-                'value' => $metric->market_return,
-            ], $mainLeague->exchange_market_metrics),
+            'marketReturnSeries' => MarketReturnSeriesResource::collection($mainLeague->exchange_market_metrics),
         ];
     }
 }
